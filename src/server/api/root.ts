@@ -1,5 +1,6 @@
-import { siteRouter } from "~/server/api/routers/site.router";
-import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
+import { siteRouter } from './routers/site.router';
+import { hoursRouter } from './routers/hours.router';
+import { createCallerFactory, createTRPCRouter } from '~/server/api/trpc';
 
 /**
  * This is the primary router for your server.
@@ -8,6 +9,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   site: siteRouter,
+  hours: hoursRouter,
 });
 
 // export type definition of API

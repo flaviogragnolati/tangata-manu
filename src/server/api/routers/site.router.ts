@@ -5,6 +5,7 @@ import {
   adminProcedure,
   createTRPCRouter,
   superAdminProcedure,
+  userProcedure,
 } from '~/server/api/trpc';
 
 export const siteRouter = createTRPCRouter({
@@ -67,7 +68,7 @@ export const siteRouter = createTRPCRouter({
         });
       }
     }),
-  getAllSites: adminProcedure.query(async ({ ctx }) => {
+  getAllSites: userProcedure.query(async ({ ctx }) => {
     return await ctx.db.site.findMany({
       include: {
         CreatedBy: true,
@@ -79,6 +80,14 @@ export const siteRouter = createTRPCRouter({
       include: {
         Site: true,
         CreatedBy: true,
+      },
+    });
+  }),
+  getActiveSiteRates: userProcedure.query(async ({ ctx }) => {
+    return await ctx.db.siteRate.findMany({
+      where: { active: true },
+      include: {
+        Site: true,
       },
     });
   }),

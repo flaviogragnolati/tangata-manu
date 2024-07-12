@@ -111,11 +111,11 @@ model UserHourLog {
     id                Int      @id @default(autoincrement())
     userId            String
     siteRateId        Int
-    normalHours       Float
+    normalHours       Float?
     saturdayPreHours  Float?
     saturdayPostHours Float?
-    dateFrom          DateTime
-    dateTo            DateTime
+    month             Int
+    year              Int
     amount            Float
     metadata          Json
     createdAt         DateTime @default(now())

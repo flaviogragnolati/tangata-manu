@@ -1,23 +1,24 @@
-import "~/styles/globals.css";
+import '~/styles/globals.css';
 
-import { Roboto } from "next/font/google";
-import { CssBaseline } from "@mui/material";
-import { ThemeProvider } from "@mui/material/styles";
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
+import { Roboto } from 'next/font/google';
+import { CssBaseline } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 
-import { theme } from "~/styles/theme";
-import { TRPCReactProvider } from "~/trpc/react";
-import ToastProvider from "~/client/providers/ToastProvider";
+import { theme } from '~/styles/theme';
+import { TRPCReactProvider } from '~/trpc/react';
+import ToastProvider from '~/client/providers/ToastProvider';
 
 const roboto = Roboto({
-  weight: ["400", "500"],
-  subsets: ["latin"],
+  weight: ['400', '500'],
+  subsets: ['latin'],
+  display: 'swap',
 });
 
 export const metadata = {
-  title: "Consultorios",
-  description: "Gestion de Consultorios",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  title: 'Consultorios',
+  description: 'Gestion de Consultorios',
+  icons: [{ rel: 'icon', url: '/favicon.ico' }],
 };
 
 export default function RootLayout({

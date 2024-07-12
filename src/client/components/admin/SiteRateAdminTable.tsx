@@ -93,7 +93,7 @@ export default function SiteAdminTable({ rates }: Props) {
   return (
     <>
       <Typography variant="h1" gutterBottom>
-        Administrador valores de hora de sitios
+        Administrador tarifas
       </Typography>
       <div style={{ height: 400, width: '100%' }}>
         <DataGrid
@@ -146,11 +146,7 @@ export default function SiteAdminTable({ rates }: Props) {
         </Button>
       </div>
       <BasicModal
-        title={
-          selectedRate
-            ? 'Editar Valor de Hora de Sitio'
-            : 'Crear Valor de Hora de Sitio'
-        }
+        title={selectedRate ? 'Editar Tarifa' : 'Crear Tarifa'}
         dialogProps={{
           open,
           onClose: () => setOpen(false),

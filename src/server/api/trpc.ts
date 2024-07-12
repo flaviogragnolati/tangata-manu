@@ -160,3 +160,5 @@ export const protectedProcedure = t.procedure.use(ensureUserIsAuthed);
 export const superAdminProcedure = t.procedure.use(ensureUserIsSuperadmin);
 
 export const adminProcedure = t.procedure.use(ensureUserIsAdmin);
+
+export const userProcedure = t.procedure.use(ensureUserIsAuthed);
