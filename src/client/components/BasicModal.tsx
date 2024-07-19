@@ -42,7 +42,11 @@ export default function BasicModal({
             <IconButton
               edge="start"
               color="inherit"
-              onClick={onClose}
+              onClick={(event) =>
+                typeof onClose === 'function'
+                  ? onClose({}, 'escapeKeyDown')
+                  : undefined
+              }
               aria-label="close"
             >
               <CloseIcon />

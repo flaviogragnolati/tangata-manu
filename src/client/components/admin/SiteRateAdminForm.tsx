@@ -31,7 +31,7 @@ export default function SiteRateAdminForm({
 }: Props) {
   const router = useRouter();
   const isEdit = !!rate?.id;
-  const defaultValues = rate ?? ({ active: true } as SiteRate);
+  const defaultValues = (rate ?? { active: true }) as SiteRate;
   const methods = useForm<SiteRate>({
     mode: 'onBlur',
     resolver: zodResolver(siteRateSchema),
