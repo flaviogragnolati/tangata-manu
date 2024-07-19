@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
 import { Button, Typography } from '@mui/material';
 import {
@@ -15,19 +15,11 @@ import BasicModal from '~/components/BasicModal';
 import SiteRateAdminForm from '~/components/admin/SiteRateAdminForm';
 
 type Row = SiteRateFull;
-type Props = { rates: SiteRateFull[] };
+type Props = { rates: SiteRateFull[]; sites: { id: number; label: string }[] };
 
-export default function SiteAdminTable({ rates }: Props) {
+export default function SiteAdminTable({ rates, sites }: Props) {
   const [open, setOpen] = useState(false);
   const [selectedRate, setSelectedRate] = useState<SiteRateFull | null>(null);
-
-  const sites = useMemo(() => {
-    const sites = new Map<number, string>();
-    rates.forEach((rate) => {
-      sites.set(rate.Site.id, rate.Site.name);
-    });
-    return Array.from(sites).map(([id, name]) => ({ id, label: name }));
-  }, [rates]);
 
   const columns: GridColDef<Row>[] = [
     { field: 'id', headerName: 'ID', width: 90 },
@@ -142,7 +134,7 @@ export default function SiteAdminTable({ rates }: Props) {
           variant="contained"
           color="primary"
         >
-          Crear nuevo sitio
+          Cargar nueva tarifa
         </Button>
       </div>
       <BasicModal
@@ -153,7 +145,11 @@ export default function SiteAdminTable({ rates }: Props) {
           fullScreen: true,
         }}
       >
-        <SiteRateAdminForm siteOptions={sites} rate={selectedRate} />
+        <SiteRateAdminForm
+          siteOptions={sites}
+          rate={selectedRate}
+          setOpen={setOpen}
+        />
       </BasicModal>
     </>
   );

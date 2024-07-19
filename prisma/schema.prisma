@@ -92,7 +92,7 @@ model Site {
 model SiteRate {
     id               Int      @id @default(autoincrement())
     siteId           Int
-    normalRate       Float
+    normalRate       Float?
     saturdayPreRate  Float?
     saturdayPostRate Float?
     createdById      String
@@ -111,11 +111,11 @@ model UserHourLog {
     id                Int      @id @default(autoincrement())
     userId            String
     siteRateId        Int
+    month             Int
+    year              Int
     normalHours       Float?
     saturdayPreHours  Float?
     saturdayPostHours Float?
-    month             Int
-    year              Int
     amount            Float
     metadata          Json
     createdAt         DateTime @default(now())

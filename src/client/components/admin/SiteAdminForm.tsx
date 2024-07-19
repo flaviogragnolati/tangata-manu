@@ -1,7 +1,8 @@
 'use client';
 
-import { LoadingButton } from '@mui/lab';
 import { Stack } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
+import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   useForm,
@@ -18,8 +19,10 @@ import FormContainer from '~/components/Form/FormContainer';
 
 type Props = {
   site?: SiteFull | null;
+  setOpen: (value: boolean) => void;
 };
-export default function SiteAdminForm({ site }: Props) {
+export default function SiteAdminForm({ site, setOpen }: Props) {
+  const router = useRouter();
   const isEdit = !!site?.id;
   const defaultValues: Site = site ?? ({} as Site);
   const methods = useForm<Site>({
@@ -42,6 +45,8 @@ export default function SiteAdminForm({ site }: Props) {
     onSuccess: () => {
       showToast('success', 'Sitio creado correctamente');
       methods.reset();
+      setOpen(false);
+      router.refresh();
     },
     onError: (error) => {
       showToast('error', error.message);

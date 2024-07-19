@@ -7,7 +7,7 @@ export default async function SiteAdminPage() {
   const sites = await api.site.getAllSites();
   return (
     <div className="container">
-      <Link href="/admin">Volver al menu</Link>
+      <Link href="/superadmin">Volver al menu</Link>
       <SiteAdminTable sites={sites} />;
     </div>
   );

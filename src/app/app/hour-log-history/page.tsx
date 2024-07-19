@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { api } from '~/trpc/server';
@@ -9,9 +10,10 @@ export default async function HourLogHistoryPage() {
   if (!session?.user?.id) {
     return redirect('/api/auth/signin');
   }
-  const hours = await api.hours.getUserHourLogs({ userId: session.user.id });
+  const hours = await api.hours.getUserHourLogs();
   return (
     <div>
+      <Link href="/app">Volver al menu</Link>
       <h1>Historial de horas</h1>
       <HourLogHistory hours={hours} />
     </div>

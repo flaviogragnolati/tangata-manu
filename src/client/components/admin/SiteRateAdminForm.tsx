@@ -1,6 +1,7 @@
 'use client';
 
 import { LoadingButton } from '@mui/lab';
+import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Divider, Stack, Typography } from '@mui/material';
 import {
@@ -20,9 +21,15 @@ import FormContainer from '~/components/Form/FormContainer';
 type Props = {
   rate?: SiteRateFull | null;
   siteOptions: { id: number; label: string }[];
+  setOpen: (value: boolean) => void;
 };
 
-export default function SiteRateAdminForm({ rate, siteOptions }: Props) {
+export default function SiteRateAdminForm({
+  rate,
+  siteOptions,
+  setOpen,
+}: Props) {
+  const router = useRouter();
   const isEdit = !!rate?.id;
   const defaultValues = rate ?? ({ active: true } as SiteRate);
   const methods = useForm<SiteRate>({
@@ -31,7 +38,10 @@ export default function SiteRateAdminForm({ rate, siteOptions }: Props) {
     defaultValues,
   });
 
-  const { handleSubmit } = methods;
+  const {
+    handleSubmit,
+    formState: { isValid },
+  } = methods;
 
   const {
     mutate: createSiteRate,
@@ -42,6 +52,8 @@ export default function SiteRateAdminForm({ rate, siteOptions }: Props) {
     onSuccess: () => {
       showToast('success', 'Valor de hora de sitio añadido correctamente');
       methods.reset();
+      setOpen(false);
+      router.refresh();
     },
     onError: (error) => {
       showToast('error', error.message);
@@ -62,7 +74,7 @@ export default function SiteRateAdminForm({ rate, siteOptions }: Props) {
       handleSubmit={handleSubmit(onSubmitHandler)}
     >
       <Typography variant="h1" gutterBottom>
-        Administrador de valores de hora de sitio
+        Crear nueva tarifa
       </Typography>
       <Stack spacing={2} direction="column" gap={2}>
         <SelectElement
@@ -91,7 +103,7 @@ export default function SiteRateAdminForm({ rate, siteOptions }: Props) {
         <Divider />
         <LoadingButton
           loading={isPending}
-          disabled={isPending}
+          disabled={isPending || !isValid}
           variant="contained"
           color="success"
           type="submit"

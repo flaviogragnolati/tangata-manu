@@ -43,7 +43,8 @@ export default function FormContainer<
   schema,
   ...useFormProps
 }: PropsWithChildren<FormContainerProps<TFieldValues>>) {
-  const isDev = env.NEXT_PUBLIC_ENV === 'development';
+  console.log('@FormContainer');
+  const isDev = false; //env.NEXT_PUBLIC_ENV === 'development';
 
   if (!formContext) {
     return (
@@ -67,7 +68,7 @@ export default function FormContainer<
   }
 
   return (
-    <ReactHookFormProvider {...formContext}>
+    <ReactHookFormProvider<TFieldValues> {...formContext}>
       <form
         noValidate
         {...FormProps}

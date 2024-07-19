@@ -11,9 +11,14 @@ export default async function AppHome() {
 
   return (
     <div>
+      <div className="flex justify-center py-4">
+        <Link href="/api/auth/signout">Cerrar Sesión</Link>
+      </div>
       <h1>Hola, {name}</h1>
-      <Link href="/app/hour-log">Cargar horas</Link>
-      <Link href="/app/hour-log-history">Ver Horas Cargadas</Link>
+      <div className="flex flex-col items-center justify-center space-y-2">
+        <Link href="/app/hour-log">Cargar horas</Link>
+        <Link href="/app/hour-log-history">Ver Horas Cargadas</Link>
+      </div>
     </div>
   );
 }

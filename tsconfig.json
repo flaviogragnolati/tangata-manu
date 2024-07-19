@@ -52,6 +52,12 @@
       "~/utils/*": [
         "./src/utils/*"
       ],
+      "~/lib/*": [
+        "./src/server/lib"
+      ],
+      "~/controller/*": [
+        "./src/server/lib/controller/*"
+      ],
     }
   },
   "include": [

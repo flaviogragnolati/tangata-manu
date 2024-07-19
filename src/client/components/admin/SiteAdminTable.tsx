@@ -23,11 +23,11 @@ export default function SiteAdminTable({ sites }: Props) {
 
   const columns: GridColDef<Row>[] = [
     { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'name', headerName: 'Name', width: 150 },
-    { field: 'createdAt', headerName: 'Created At', width: 150 },
+    { field: 'name', headerName: 'Nombre', width: 150 },
+    { field: 'createdAt', headerName: 'Creado en', width: 150 },
     {
       field: 'createdBy',
-      headerName: 'Created By',
+      headerName: 'Creado por',
       width: 150,
       valueGetter: (_, row) => {
         return row.CreatedBy.name;
@@ -36,7 +36,7 @@ export default function SiteAdminTable({ sites }: Props) {
     {
       field: 'actions',
       type: 'actions',
-      headerName: 'Actions',
+      headerName: 'Acciones',
       width: 120,
       getActions: (params) => [
         <GridActionsCellItem
@@ -112,7 +112,7 @@ export default function SiteAdminTable({ sites }: Props) {
           fullScreen: true,
         }}
       >
-        <SiteAdminForm site={selectedSite} />
+        <SiteAdminForm site={selectedSite} setOpen={setOpen} />
       </BasicModal>
     </>
   );
