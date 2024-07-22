@@ -10,6 +10,7 @@ import {
   TextFieldElement,
   SelectElement,
   SwitchElement,
+  AutocompleteElement,
 } from 'react-hook-form-mui';
 
 import { api } from '~/trpc/react';
@@ -21,12 +22,14 @@ import FormContainer from '~/components/Form/FormContainer';
 type Props = {
   rate?: SiteRateFull | null;
   siteOptions: { id: number; label: string }[];
+  userOptions: { id: string; label: string }[];
   setOpen: (value: boolean) => void;
 };
 
 export default function SiteRateAdminForm({
   rate,
   siteOptions,
+  userOptions,
   setOpen,
 }: Props) {
   const router = useRouter();
@@ -74,12 +77,12 @@ export default function SiteRateAdminForm({
       handleSubmit={handleSubmit(onSubmitHandler)}
     >
       <Typography variant="h1" gutterBottom>
-        Crear nueva tarifa
+        {isEdit ? 'Editar' : 'Crear'} tarifa
       </Typography>
       <Stack spacing={2} direction="column" gap={2}>
         <SelectElement
           name="siteId"
-          label="Sitios"
+          label="Sitio"
           options={siteOptions}
           required
         />
@@ -98,6 +101,20 @@ export default function SiteRateAdminForm({
           name="saturdayPostRate"
           label="Valor de hora sábado después de las 14:00"
           type="number"
+        />
+        <AutocompleteElement
+          name="userId"
+          label="Usuario"
+          matchId
+          options={userOptions}
+          autocompleteProps={{
+            getOptionLabel: (option) => option.label,
+            noOptionsText: 'No se encontraron usuarios',
+            clearOnEscape: true,
+            autoHighlight: true,
+            autoComplete: true,
+            autoSelect: true,
+          }}
         />
         <SwitchElement name="active" label="Activo" />
         <Divider />

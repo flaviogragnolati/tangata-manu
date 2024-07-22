@@ -6,7 +6,7 @@ import type { Prisma } from '@prisma/client';
 import { userHourLogFormSchema } from '~/schemas';
 import {
   normalizeHourLogs,
-  normalizeHourLogsByUser,
+  normalizeUserSalaries,
 } from '~/controller/hour.controller';
 import {
   adminProcedure,
@@ -15,6 +15,56 @@ import {
 } from '~/server/api/trpc';
 
 export const hoursRouter = createTRPCRouter({
+  getUsersSalaries: adminProcedure
+    .input(
+      z
+        .object({
+          year: z.number().optional(),
+          month: z.number().optional(),
+          userIds: z.array(z.string()).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input, ctx }) => {
+      const year = input?.year;
+      const month = input?.month;
+      const userIds = input?.userIds;
+
+      let hourLogs: Prisma.UserHourLogGetPayload<{
+        include: {
+          User: true;
+          SiteRate: true;
+        };
+      }>[];
+      if (userIds?.length) {
+        hourLogs = await ctx.db.userHourLog.findMany({
+          where: {
+            userId: { in: userIds },
+            year,
+            month,
+          },
+          include: {
+            User: true,
+            SiteRate: true,
+          },
+        });
+      } else {
+        hourLogs = await ctx.db.userHourLog.findMany({
+          where: {
+            year,
+            month,
+          },
+          include: {
+            User: true,
+            SiteRate: true,
+          },
+        });
+      }
+
+      const sites = await ctx.db.site.findMany();
+
+      return normalizeUserSalaries(hourLogs, sites);
+    }),
   getAllHourLogs: adminProcedure.query(async ({ ctx }) => {
     const hourlogs = await ctx.db.userHourLog.findMany({
       include: {
@@ -31,105 +81,6 @@ export const hoursRouter = createTRPCRouter({
     });
 
     return hourlogs;
-
-    // const sites = await ctx.db.site.findMany();
-    // const sitesById = _.keyBy(sites, 'id');
-
-    // const hours = normalizeHourLogsByUser(hourlogs, sites);
-
-    // type Data = {
-    //   userId: string;
-    //   userName: string | null;
-    //   siteId: string;
-    //   siteName: string;
-    //   siteRateId: string;
-    //   year: number;
-    //   month: number;
-    //   normalHours: number;
-    //   saturdayPreHours: number;
-    //   saturdayPostHours: number;
-    //   totalHours: number;
-    //   normalAmount: number;
-    //   saturdayPreAmount: number;
-    //   saturdayPostAmount: number;
-    //   amount: number;
-    //   date: Date;
-    // };
-    // const data: Data[] = [];
-
-    // const userIds = _.keys(hours);
-
-    // const users = await ctx.db.user.findMany({
-    //   where: { id: { in: userIds } },
-    // });
-
-    // const usersById = _.keyBy(users, 'id');
-
-    // for (const userId of userIds) {
-    //   const user = usersById[userId];
-    //   const userHours = hours[userId];
-    //   if (!userHours || !user) continue;
-    //   const years = _.keys(userHours);
-    //   for (const year of years) {
-    //     const yearHours = userHours[year];
-    //     if (!yearHours) continue;
-    //     const months = _.keys(yearHours);
-    //     for (const month of months) {
-    //       const monthHours = yearHours[month];
-    //       if (!monthHours) continue;
-    //       const siteIds = _.keys(monthHours);
-    //       for (const siteId of siteIds) {
-    //         const site = sitesById[siteId];
-    //         const siteHours = monthHours[siteId];
-    //         if (!siteHours || site) continue;
-    //         data.push({
-    //           userId,
-    //           userName: user.name,
-    //           siteId,
-    //           siteName: site.name,
-    //           year: Number(year),
-    //           month: Number(month),
-    //           normalHours: siteHours.reduce(
-    //             (acc, curr) => acc + curr.normalHours,
-    //             0,
-    //           ),
-    //           saturdayPreHours: siteHours.reduce(
-    //             (acc, curr) => acc + curr.saturdayPreHours,
-    //             0,
-    //           ),
-    //           saturdayPostHours: siteHours.reduce(
-    //             (acc, curr) => acc + curr.saturdayPostHours,
-    //             0,
-    //           ),
-    //           totalHours: siteHours.reduce(
-    //             (acc, curr) =>
-    //               acc +
-    //               curr.normalHours +
-    //               curr.saturdayPreHours +
-    //               curr.saturdayPostHours,
-    //             0,
-    //           ),
-    //           normalAmount: siteHours.reduce(
-    //             (acc, curr) => acc + curr.normalAmount,
-    //             0,
-    //           ),
-    //           saturdayPreAmount: siteHours.reduce(
-    //             (acc, curr) => acc + curr.saturdayPreAmount,
-    //             0,
-    //           ),
-    //           saturdayPostAmount: siteHours.reduce(
-    //             (acc, curr) => acc + curr.saturdayPostAmount,
-    //             0,
-    //           ),
-    //           amount: siteHours.reduce((acc, curr) => acc + curr.amount, 0),
-    //           date: new Date(Number(year), Number(month)),
-    //         });
-    //       }
-    //     }
-    //   }
-    // }
-
-    // return hourlogs;
   }),
   getUserHourLogs: userProcedure
     .input(

@@ -59,11 +59,12 @@ model User {
     image         String?
     role          UserRole  @default(USER)
 
-    Accounts    Account[]
-    Sessions    Session[]
-    Sites       Site[]
-    UserHourLog UserHourLog[]
-    SiteRate    SiteRate[]
+    Accounts         Account[]
+    Sessions         Session[]
+    Sites            Site[]
+    UserHourLog      UserHourLog[]
+    CreatedSiteRate  SiteRate[]    @relation("User")
+    AssignedSiteRate SiteRate[]    @relation("CreatedBy")
 
     @@index([id, email])
 }
@@ -96,12 +97,14 @@ model SiteRate {
     saturdayPreRate  Float?
     saturdayPostRate Float?
     createdById      String
+    userId           String?
     active           Boolean  @default(true)
     createdAt        DateTime @default(now())
     updatedAt        DateTime @updatedAt
 
-    CreatedBy   User          @relation(fields: [createdById], references: [id])
+    CreatedBy   User          @relation("CreatedBy", fields: [createdById], references: [id])
     Site        Site          @relation(fields: [siteId], references: [id])
+    User        User?         @relation("User", fields: [userId], references: [id])
     UserHourLog UserHourLog[]
 
     @@index([id, siteId])

@@ -10,14 +10,19 @@ import {
   type GridColDef,
 } from '@mui/x-data-grid';
 
+import { dayjs } from '~/utils/dayjs';
 import { type SiteRateFull } from '~/types';
 import BasicModal from '~/components/BasicModal';
 import SiteRateAdminForm from '~/components/admin/SiteRateAdminForm';
 
 type Row = SiteRateFull;
-type Props = { rates: SiteRateFull[]; sites: { id: number; label: string }[] };
+type Props = {
+  rates: SiteRateFull[];
+  sites: { id: number; label: string }[];
+  users: { id: string; label: string }[];
+};
 
-export default function SiteAdminTable({ rates, sites }: Props) {
+export default function SiteRateAdminTable({ rates, sites, users }: Props) {
   const [open, setOpen] = useState(false);
   const [selectedRate, setSelectedRate] = useState<SiteRateFull | null>(null);
 
@@ -26,8 +31,14 @@ export default function SiteAdminTable({ rates, sites }: Props) {
     {
       field: 'siteName',
       headerName: 'Sitio',
-      width: 150,
+      width: 100,
       valueGetter: (_, row) => row.Site.name,
+    },
+    {
+      field: 'userName',
+      headerName: 'Usuario',
+      width: 100,
+      valueGetter: (_, row) => row.User?.name ?? row.User?.email,
     },
     {
       field: 'normalRate',
@@ -52,14 +63,25 @@ export default function SiteAdminTable({ rates, sites }: Props) {
         return row.CreatedBy.name;
       },
     },
-    { field: 'createdAt', headerName: 'Fecha Creado', width: 150 },
-    { field: 'updatedAt', headerName: 'Fecha Actualizado', width: 150 },
-    { field: 'active', headerName: 'Activo' },
+    {
+      field: 'createdAt',
+      headerName: 'Fecha Creado',
+      width: 150,
+      valueGetter: (_, row) => {
+        return dayjs(row.createdAt).format('DD/MM/YYYY');
+      },
+    },
+    {
+      field: 'active',
+      headerName: 'Activo',
+      valueGetter: (_, row) => {
+        return row.active ? 'Si' : 'No';
+      },
+    },
     {
       field: 'actions',
       type: 'actions',
-      headerName: 'Actions',
-      width: 120,
+      headerName: 'Editar',
       getActions: (params) => [
         <GridActionsCellItem
           key={params.id}
@@ -91,7 +113,6 @@ export default function SiteAdminTable({ rates, sites }: Props) {
         <DataGrid
           rows={rates}
           columns={columns}
-          checkboxSelection
           autoHeight
           filterMode="client"
           sortingMode="client"
@@ -108,7 +129,7 @@ export default function SiteAdminTable({ rates, sites }: Props) {
                   {
                     field: 'active',
                     operator: 'equals',
-                    value: 'true',
+                    value: 'Si',
                   },
                 ],
               },
@@ -147,6 +168,7 @@ export default function SiteAdminTable({ rates, sites }: Props) {
       >
         <SiteRateAdminForm
           siteOptions={sites}
+          userOptions={users}
           rate={selectedRate}
           setOpen={setOpen}
         />

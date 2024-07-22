@@ -89,6 +89,7 @@ export default function HourLogConfirmation({
           variant="outlined"
           color="secondary"
           className="mt-3 max-w-xs self-center"
+          onClick={() => setOpen(false)}
         >
           Volver
         </Button>

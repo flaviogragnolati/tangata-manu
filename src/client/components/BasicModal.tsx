@@ -27,7 +27,6 @@ export default function BasicModal({
   children,
 }: Props) {
   const { open, fullScreen, onClose } = dialogProps;
-
   if (fullScreen) {
     return (
       <Dialog

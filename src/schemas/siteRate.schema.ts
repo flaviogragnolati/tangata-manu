@@ -5,6 +5,7 @@ export const siteRateSchema = z.object({
   normalRate: z.number().positive(),
   saturdayPreRate: z.number().positive().nullable(),
   saturdayPostRate: z.number().positive().nullable(),
+  userId: z.string().nullable(),
   active: z.boolean().default(true),
 });
 

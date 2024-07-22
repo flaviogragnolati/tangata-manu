@@ -10,6 +10,7 @@ import {
   type GridColDef,
 } from '@mui/x-data-grid';
 
+import { dayjs } from '~/utils/dayjs';
 import { type SiteFull } from '~/types';
 import BasicModal from '~/components/BasicModal';
 import SiteAdminForm from '~/components/admin/SiteAdminForm';
@@ -22,13 +23,20 @@ export default function SiteAdminTable({ sites }: Props) {
   const [selectedSite, setSelectedSite] = useState<SiteFull | null>(null);
 
   const columns: GridColDef<Row>[] = [
-    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'id', headerName: 'ID', width: 40 },
     { field: 'name', headerName: 'Nombre', width: 150 },
-    { field: 'createdAt', headerName: 'Creado en', width: 150 },
+    { field: 'location', headerName: 'Dirección', width: 150 },
+    { field: 'description', headerName: 'Descripción', width: 150 },
+    {
+      field: 'createdAt',
+      headerName: 'Creado en',
+      valueGetter: (_, row) => {
+        return dayjs(row.createdAt).format('DD/MM/YYYY');
+      },
+    },
     {
       field: 'createdBy',
       headerName: 'Creado por',
-      width: 150,
       valueGetter: (_, row) => {
         return row.CreatedBy.name;
       },
@@ -36,8 +44,7 @@ export default function SiteAdminTable({ sites }: Props) {
     {
       field: 'actions',
       type: 'actions',
-      headerName: 'Acciones',
-      width: 120,
+      headerName: 'Editar',
       getActions: (params) => [
         <GridActionsCellItem
           key={params.id}
@@ -69,7 +76,6 @@ export default function SiteAdminTable({ sites }: Props) {
         <DataGrid
           rows={sites}
           columns={columns}
-          checkboxSelection
           autoHeight
           filterMode="client"
           sortingMode="client"

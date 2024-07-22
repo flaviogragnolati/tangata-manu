@@ -1,4 +1,5 @@
 import { siteRouter } from './routers/site.router';
+import { userRouter } from './routers/user.router';
 import { hoursRouter } from './routers/hours.router';
 import { createCallerFactory, createTRPCRouter } from '~/server/api/trpc';
 
@@ -10,6 +11,7 @@ import { createCallerFactory, createTRPCRouter } from '~/server/api/trpc';
 export const appRouter = createTRPCRouter({
   site: siteRouter,
   hours: hoursRouter,
+  user: userRouter,
 });
 
 // export type definition of API

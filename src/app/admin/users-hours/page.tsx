@@ -1,14 +1,13 @@
-import Link from 'next/link';
-import HourLogHistoryByUser from '~/components/HourLogHistoryByUser';
-
 import { api } from '~/trpc/server';
+import BackButton from '~/components/BackButton';
+import HourLogHistoryByUser from '~/components/HourLogHistoryByUser';
 
 export default async function UsersHoursAdminPage() {
   const allHours = await api.hours.getAllHourLogs();
 
   return (
     <div className="container">
-      <Link href="/admin">Volver al menu</Link>
+      <BackButton href="/admin" />
       <HourLogHistoryByUser hourLogs={allHours} />
     </div>
   );

@@ -43,6 +43,9 @@
       "~/components/*": [
         "./src/client/components/*"
       ],
+      "~/hooks": [
+        "./src/client/hooks/index.ts"
+      ],
       "~/schemas": [
         "./src/schemas/index.ts"
       ],

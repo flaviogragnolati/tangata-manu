@@ -31,10 +31,11 @@ export const siteRouter = createTRPCRouter({
   createSiteRate: adminProcedure
     .input(siteRateSchema)
     .mutation(async ({ input, ctx }) => {
-      // 1. Check if there is another `active` SiteRate for the same site
+      // 1. Check if there is another `active` SiteRate for the same site & userId combination
       const activeSiteRate = await ctx.db.siteRate.findFirst({
         where: {
           siteId: input.siteId,
+          userId: input.userId,
           active: true,
         },
       });
@@ -80,6 +81,7 @@ export const siteRouter = createTRPCRouter({
       include: {
         Site: true,
         CreatedBy: true,
+        User: true,
       },
     });
   }),

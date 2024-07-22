@@ -1,14 +1,11 @@
 'use client';
 
 import { capitalize } from 'lodash';
-import {
-  DataGrid,
-  GridActionsCellItem,
-  GridToolbar,
-  type GridColDef,
-} from '@mui/x-data-grid';
+import { Typography } from '@mui/material';
+import { DataGrid, GridToolbar, type GridColDef } from '@mui/x-data-grid';
 
 import { dayjs } from '~/utils/dayjs';
+import { ARSformatter } from '~/utils/helpers';
 import type { HourLogWithUserFull } from '~/types';
 
 type Row = HourLogWithUserFull;
@@ -25,12 +22,10 @@ export default function HourLogHistoryByUser({ hourLogs }: Props) {
     {
       field: 'year',
       headerName: 'Año',
-      // width: 60,
     },
     {
       field: 'month',
       headerName: 'Mes',
-      // width: 60,
       valueGetter: (_, row) =>
         capitalize(dayjs().month(row.month).format('MMMM')),
     },
@@ -43,25 +38,21 @@ export default function HourLogHistoryByUser({ hourLogs }: Props) {
     {
       field: 'normalHours',
       headerName: 'Hrs. Normales',
-      // width: 50,
       valueGetter: (_, row) => row.normalHours,
     },
     {
       field: 'saturdayPreHours',
       headerName: 'Hrs. Sábado Pre 14:00',
-      // width: 50,
       valueGetter: (_, row) => row.saturdayPreHours,
     },
     {
       field: 'saturdayPostHours',
       headerName: 'Hrs. Sábado Post 14:00',
-      // width: 50,
       valueGetter: (_, row) => row.saturdayPostHours,
     },
     {
       field: 'totalHours',
       headerName: 'Horas totales',
-      // width: 50,
       valueGetter: (_, row) =>
         (row.normalHours ?? 0) +
         (row.saturdayPreHours ?? 0) +
@@ -70,18 +61,20 @@ export default function HourLogHistoryByUser({ hourLogs }: Props) {
     {
       field: 'amount',
       headerName: 'Monto',
-      // width: 50,
+      valueFormatter: (_, row) => ARSformatter.format(row.amount),
     },
     {
       field: 'date',
       headerName: 'Fecha de carga',
-      // width: 100,
       valueGetter: (_, row) => row.createdAt,
     },
   ];
 
   return (
     <div style={{ height: 400, width: '100%' }}>
+      <Typography variant="h1" gutterBottom>
+        Registro de horas por usuario
+      </Typography>
       <DataGrid
         rows={hourLogs}
         columns={columns}

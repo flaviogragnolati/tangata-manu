@@ -5,6 +5,20 @@ export const C = {
     saturdayPre: 'Sábado hasta las 14:00',
     saturdayPost: 'Sábado después de las 14:00',
   },
+  months: [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ],
 } as const;
 
 export default C;

@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import type { Site, Prisma } from '@prisma/client';
+import dayjs from 'dayjs';
 
 type UserHourLogWithPayload = Prisma.UserHourLogGetPayload<{
   include: {
@@ -180,4 +181,89 @@ export function normalizeHourLogsByUser(
   });
 
   return normalizedHourLog;
+}
+
+export type UserSalary = {
+  userId: string;
+  userName: string | null;
+  siteId: string;
+  siteName: string;
+  year: number;
+  month: number;
+  totalHours: number;
+  totalAmount: number;
+};
+
+export function normalizeUserSalaries(
+  hourlogs: UserHourLogWithPayload[],
+  sites: Site[],
+) {
+  let hours = hourlogs.map((hourlog) => {
+    const site = sites.find((site) => site.id === hourlog.SiteRate.siteId);
+    if (!site) {
+      return;
+    }
+    return {
+      ...hourlog,
+      siteId: site.id,
+      date: dayjs().year(hourlog.year).month(hourlog.month),
+    };
+  });
+  hours = _.sortBy(hours, 'date');
+
+  const groupedByUser = _.groupBy(hours, 'userId');
+  const userSalaries: UserSalary[] = [];
+  const userExtraSalaries: [string, number, number, number][] = []; // [userId, year, month, extraSalary][]
+  _.forOwn(groupedByUser, (userLogs, userId) => {
+    const user = userLogs?.[0]?.User;
+    if (!user) {
+      return;
+    }
+    const groupedByYear = _.groupBy(userLogs, 'year');
+    _.forOwn(groupedByYear, (yearLogs, year) => {
+      const groupedByMonth = _.groupBy(yearLogs, 'month');
+      _.forOwn(groupedByMonth, (monthLogs, month) => {
+        const groupedBySite = _.groupBy(monthLogs, 'siteId');
+
+        let extraSalary = 0;
+        _.forOwn(groupedBySite, (siteLogs, siteId) => {
+          const site = sites.find((site) => site.id === +siteId);
+          if (!site) {
+            return;
+          }
+          const totalHours = siteLogs.reduce(
+            (acc, curr) =>
+              acc +
+              (curr?.normalHours ?? 0) +
+              (curr?.saturdayPreHours ?? 0) +
+              (curr?.saturdayPostHours ?? 0),
+            0,
+          );
+          const totalAmount = siteLogs.reduce(
+            (acc, curr) => acc + (curr?.amount ?? 0),
+            0,
+          );
+          extraSalary += totalAmount;
+          userSalaries.push({
+            userId,
+            userName: user.name,
+            siteId,
+            siteName: site.name,
+            year: +year,
+            month: +month,
+            totalHours,
+            totalAmount,
+          });
+        });
+        userExtraSalaries.push([
+          userId,
+          +year,
+          +month,
+          Math.ceil(extraSalary / 12),
+        ]);
+      });
+    });
+  });
+
+  return { userSalaries, userExtraSalaries };
 }
