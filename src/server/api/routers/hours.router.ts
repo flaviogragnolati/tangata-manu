@@ -84,18 +84,24 @@ export const hoursRouter = createTRPCRouter({
     return hourlogs;
   }),
   getUserContextHourLogs: userProcedure
-    .input(z.object({ userId: z.string(), date: z.date().optional() }))
+    .input(
+      z
+        .object({ userId: z.string().optional(), date: z.date().optional() })
+        .optional(),
+    )
     .query(async ({ input, ctx }) => {
-      const month = dayjs(input.date).month();
-      const year = dayjs(input.date).year();
-      const prevMonth = dayjs(input.date).subtract(1, 'month').toDate();
-      const nextMonth = dayjs(input.date).add(1, 'month').toDate();
+      const userId = input?.userId ?? ctx.user.id;
+      const month = dayjs(input?.date).month();
+      const year = dayjs(input?.date).year();
+      const prevMonth = dayjs(input?.date).subtract(1, 'month').toDate();
+      const nextMonth = dayjs(input?.date).add(1, 'month').toDate();
 
       const [sites, hourLogs] = await Promise.all([
         ctx.db.site.findMany(),
 
         ctx.db.userHourLog.findMany({
           where: {
+            userId,
             year: {
               in:
                 month === 0

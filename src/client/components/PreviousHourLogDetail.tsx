@@ -11,11 +11,11 @@ type Props = {
 };
 export default function PreviousHourLogDetail({ hours, year, month }: Props) {
   const hoursBySite = hours[year]?.[month];
-  if (!hoursBySite) return null;
+
   const sites = keys(hoursBySite);
 
   const totalHours = sites.reduce((acc, siteId) => {
-    const siteLog = hoursBySite[siteId];
+    const siteLog = hoursBySite?.[siteId];
     if (!siteLog) return acc;
     return (
       acc +
@@ -24,6 +24,11 @@ export default function PreviousHourLogDetail({ hours, year, month }: Props) {
       siteLog.saturdayPostHours
     );
   }, 0);
+
+  if (!hoursBySite)
+    return (
+      <Typography variant="body1">No hay horas cargadas previamente</Typography>
+    );
 
   return (
     <Grid container xs={12}>

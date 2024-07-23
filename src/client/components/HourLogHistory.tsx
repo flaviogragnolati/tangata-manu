@@ -29,11 +29,17 @@ export default function HourLogHistory({ hours }: Props) {
     useState<NormalizedHourLogContent | null>(null);
 
   const years = Object.keys(hours);
+
   return (
     <>
       <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Historial de horas
       </Typography>
+      {!years.length && (
+        <Typography variant="body1">
+          No hay horas cargadas previamente
+        </Typography>
+      )}
       <Grid container xs={12}>
         {years.map((year) => {
           const totalYearHours = Object.keys(hours[year] ?? []).reduce(

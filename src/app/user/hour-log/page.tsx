@@ -7,15 +7,12 @@ import { getServerAuthSession } from '~/server/auth';
 
 export default async function HourLogPage() {
   const session = await getServerAuthSession();
-  const userId = session?.user?.id;
-  if (!userId) {
+  if (!session?.user?.id) {
     redirect('/api/auth/signin');
   }
 
   const sites = await api.site.getAllSites();
-  const previousHourLogs = await api.hours.getUserContextHourLogs({
-    userId,
-  });
+  const previousHourLogs = await api.hours.getUserContextHourLogs();
 
   return (
     <div className="container">
