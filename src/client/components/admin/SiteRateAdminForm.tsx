@@ -116,7 +116,7 @@ export default function SiteRateAdminForm({
             autoSelect: true,
           }}
         />
-        <SwitchElement name="active" label="Activo" />
+        {isEdit && <SwitchElement name="active" label="Activo" />}
         <Divider />
         <LoadingButton
           loading={isPending}

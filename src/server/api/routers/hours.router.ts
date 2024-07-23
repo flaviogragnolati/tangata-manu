@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import type { Prisma } from '@prisma/client';
 
-import { userHourLogFormSchema } from '~/schemas';
+import { dayjs } from '~/utils/dayjs';
+import { updateHourLogSchema, userHourLogFormSchema } from '~/schemas';
 import {
   normalizeHourLogs,
   normalizeUserSalaries,
@@ -82,6 +83,45 @@ export const hoursRouter = createTRPCRouter({
 
     return hourlogs;
   }),
+  getUserContextHourLogs: userProcedure
+    .input(z.object({ userId: z.string(), date: z.date().optional() }))
+    .query(async ({ input, ctx }) => {
+      const month = dayjs(input.date).month();
+      const year = dayjs(input.date).year();
+      const prevMonth = dayjs(input.date).subtract(1, 'month').toDate();
+      const nextMonth = dayjs(input.date).add(1, 'month').toDate();
+
+      const [sites, hourLogs] = await Promise.all([
+        ctx.db.site.findMany(),
+
+        ctx.db.userHourLog.findMany({
+          where: {
+            year: {
+              in:
+                month === 0
+                  ? [year - 1, year] // if month is january, we need to get the previous year
+                  : month === 11
+                    ? [year, year + 1] // if month is december, we need to get the next year
+                    : [year], // else we get the current year
+            },
+            month: {
+              in:
+                month === 0
+                  ? [11, 0] // if month is january, we need to get the previous month
+                  : month === 11
+                    ? [10, 11] // if month is december, we need to get the next month
+                    : [prevMonth.getMonth(), month, nextMonth.getMonth()], // else we get the current month
+            },
+          },
+          include: {
+            User: true,
+            SiteRate: true,
+          },
+        }),
+      ]);
+
+      return normalizeHourLogs(hourLogs, sites);
+    }),
   getUserHourLogs: userProcedure
     .input(
       z
@@ -125,6 +165,16 @@ export const hoursRouter = createTRPCRouter({
 
       const sites = await ctx.db.site.findMany();
 
+      // const mockHourLogs =
+      //   [] ||
+      //   [...hourlogs, ...hourlogs, ...hourlogs].map((hourlog, idx) => {
+      //     return {
+      //       ...hourlog,
+      //       year: 2023,
+      //       month: idx % 2 === 0 ? 1 + idx : idx,
+      //     };
+      //   });
+
       return normalizeHourLogs(hourlogs, sites);
     }),
   addUserHourLog: userProcedure
@@ -132,32 +182,30 @@ export const hoursRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       // 1. get siteIds from input
       const siteIds = _.uniq(input.hours.map((entry) => entry.site));
+      // 2. find previous userHourLog for same userId, year and month
 
-      const siteRates = await ctx.db.siteRate.findMany({
-        where: {
-          siteId: { in: siteIds },
-          active: true,
-        },
-      });
-      const siteRatesById = {} as Record<number, (typeof siteRates)[number]>;
-      siteRates.forEach((siteRate) => {
-        if (!siteRatesById[siteRate.siteId]) {
-          siteRatesById[siteRate.siteId] = siteRate;
-        }
-      });
-
-      // 2. check all siteIds have an active siteRate
-      const missingSiteRates = siteIds.filter(
-        (siteId) => !siteRatesById[siteId],
-      );
-      if (missingSiteRates.length) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Missing active siteRate for siteIds: ${missingSiteRates.join(
-            ', ',
-          )}`,
-        });
-      }
+      const [siteRates, previousUserHourLogs] = await Promise.all([
+        await ctx.db.siteRate.findMany({
+          where: {
+            siteId: { in: siteIds },
+            active: true,
+          },
+        }),
+        await ctx.db.userHourLog.findMany({
+          where: {
+            userId: ctx.user.id,
+            year: input.year,
+            month: input.month,
+          },
+          include: {
+            SiteRate: {
+              include: {
+                Site: true,
+              },
+            },
+          },
+        }),
+      ]);
 
       // 3. sum hours by site and by rate
       const hoursBySite = _.groupBy(input.hours, 'site');
@@ -165,12 +213,26 @@ export const hoursRouter = createTRPCRouter({
         _.groupBy(hours, 'rate'),
       );
 
-      console.log('hoursBySiteAndRate', JSON.stringify(hoursBySiteAndRate));
+      const userHourLogs: {
+        siteRateId: number;
+        siteId: number;
+        normalHours: number;
+        saturdayPreHours: number;
+        saturdayPostHours: number;
+        amount: number;
+      }[] = [];
 
-      const userHourLogs: Prisma.UserHourLogUncheckedCreateInput[] = [];
-
+      // 4. parse hoursBySiteAndRate and calculate amount
       _.forOwn(hoursBySiteAndRate, (hoursByRate, siteId) => {
-        const siteRate = siteRatesById?.[Number(siteId)];
+        // find user specific siteRate if exists else get the first siteRate
+        const siteRate =
+          siteRates.find(
+            (siteRate) =>
+              siteRate.siteId === parseInt(siteId) &&
+              siteRate.userId === ctx.user.id,
+          ) ??
+          siteRates.find((siteRate) => siteRate.siteId === parseInt(siteId));
+
         if (!siteRate) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -195,31 +257,111 @@ export const hoursRouter = createTRPCRouter({
           saturdayPostHours * (siteRate.saturdayPostRate ?? 0);
 
         const data = {
-          userId: ctx.user.id,
           siteRateId: siteRate.id,
-          month: input.month,
-          year: input.year,
+          siteId: siteRate.siteId,
           normalHours,
           saturdayPreHours,
           saturdayPostHours,
           amount,
-          metadata: {
-            totalHours: normalHours + saturdayPreHours + saturdayPostHours,
-            normalAmount: normalHours * (siteRate.normalRate ?? 0),
-            saturdayPreAmount:
-              saturdayPreHours * (siteRate.saturdayPreRate ?? 0),
-            saturdayPostAmount:
-              saturdayPostHours * (siteRate.saturdayPostRate ?? 0),
-          },
         };
 
         userHourLogs.push(data);
       });
 
-      await ctx.db.userHourLog.createMany({
-        data: userHourLogs,
+      const userHourLogsToUpdate: (Prisma.UserHourLogUncheckedUpdateInput & {
+        id: number;
+      })[] = [];
+      const userHourLogsToCreate: Prisma.UserHourLogUncheckedCreateInput[] = [];
+
+      userHourLogs.forEach((userHourLog) => {
+        // find previous userHourLog for same userId, year, month and siteRateId
+        const previousUserHourLog =
+          previousUserHourLogs.find(
+            (prevUserLog) => prevUserLog.siteRateId === userHourLog.siteRateId,
+          ) ??
+          previousUserHourLogs.find(
+            (prevUserLog) =>
+              prevUserLog.SiteRate.Site.id === userHourLog.siteId,
+          );
+
+        // if previousUserHourLog is found, we either update the same siteRateId or not
+        if (previousUserHourLog) {
+          const updatedUserHourLog = {
+            ..._.omit(previousUserHourLog, 'SiteRate'),
+            siteRateId: userHourLog.siteRateId, // if same siteRateId was found then its the same id, else it's the `new` siteRateId,
+            normalHours:
+              (previousUserHourLog.normalHours ?? 0) + userHourLog.normalHours,
+            saturdayPreHours:
+              (previousUserHourLog.saturdayPreHours ?? 0) +
+              userHourLog.saturdayPreHours,
+            saturdayPostHours:
+              (previousUserHourLog.saturdayPostHours ?? 0) +
+              userHourLog.saturdayPostHours,
+            amount: previousUserHourLog.amount + userHourLog.amount,
+            metadata: {},
+          };
+          userHourLogsToUpdate.push(updatedUserHourLog);
+        }
+        // else we create a new entry
+        else {
+          const newUserHourLog = {
+            ..._.omit(userHourLog, 'siteId'),
+            userId: ctx.user.id,
+            year: input.year,
+            month: input.month,
+            metadata: {},
+          };
+          userHourLogsToCreate.push(newUserHourLog);
+        }
       });
 
+      userHourLogsToUpdate.length &&
+        (await Promise.all(
+          userHourLogsToUpdate.map((userHourLog) => {
+            return ctx.db.userHourLog.update({
+              where: { id: userHourLog.id },
+              data: { ...userHourLog, id: undefined },
+            });
+          }),
+        ));
+      userHourLogsToCreate.length &&
+        (await Promise.all([
+          ctx.db.userHourLog.createMany({
+            data: userHourLogsToCreate,
+          }),
+        ]));
+
       return true;
+    }),
+  updateUserHourLog: userProcedure
+    .input(updateHourLogSchema)
+    .mutation(async ({ input, ctx }) => {
+      const {
+        id,
+        normalHours = 0,
+        saturdayPreHours = 0,
+        saturdayPostHours = 0,
+      } = input;
+      const userHourLog = await ctx.db.userHourLog.findUniqueOrThrow({
+        where: { id: input.id },
+        include: {
+          SiteRate: true,
+        },
+      });
+
+      const amount =
+        normalHours * (userHourLog.SiteRate.normalRate ?? 0) +
+        saturdayPreHours * (userHourLog.SiteRate.saturdayPreRate ?? 0) +
+        saturdayPostHours * (userHourLog.SiteRate.saturdayPostRate ?? 0);
+
+      return await ctx.db.userHourLog.update({
+        where: { id },
+        data: {
+          normalHours,
+          saturdayPreHours,
+          saturdayPostHours,
+          amount,
+        },
+      });
     }),
 });

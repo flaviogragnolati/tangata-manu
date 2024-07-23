@@ -1,16 +1,16 @@
-import { Stack, Typography } from '@mui/material';
 import { keys } from 'lodash';
+import { Grid, Typography } from '@mui/material';
+
 import type { HourLogFull } from '~/types';
+import SiteHourCard from '~/components/user/SiteHourCard';
 
 type Props = {
   hours: HourLogFull;
+  month: number;
+  year: number;
 };
-export default function PreviousHourLogDetail({ hours }: Props) {
-  const year = keys(hours)[0];
-  if (!year || !hours[year]) return null;
-  const month = keys(hours[year])[0];
-  if (!month || !hours[year]?.[month]) return null;
-  const hoursBySite = hours[year][month];
+export default function PreviousHourLogDetail({ hours, year, month }: Props) {
+  const hoursBySite = hours[year]?.[month];
   if (!hoursBySite) return null;
   const sites = keys(hoursBySite);
 
@@ -26,24 +26,26 @@ export default function PreviousHourLogDetail({ hours }: Props) {
   }, 0);
 
   return (
-    <div>
-      <Typography variant="h6">Horas cargadas previamente</Typography>
-      <Stack spacing={2} direction="column">
-        {sites.map((siteId) => {
-          const siteLog = hoursBySite[siteId];
-          console.log('siteLog', siteLog);
-          if (!siteLog) return null;
-          return (
-            <Stack key={siteId} spacing={2} direction="column">
-              <h2>{siteLog.siteName}</h2>
-              <p>Horas normales: {siteLog.normalHours}</p>
-              <p>Horas sábado previo 14:00: {siteLog.saturdayPreHours}</p>
-              <p>Horas sábado pasadas 14:00: {siteLog.saturdayPostHours}</p>
-            </Stack>
-          );
-        })}
-      </Stack>
-      <h2>Total de horas: {totalHours}</h2>
-    </div>
+    <Grid container xs={12}>
+      <Grid item xs={12}>
+        <Typography variant="h6" gutterBottom>
+          Horas cargadas previamente
+        </Typography>
+      </Grid>
+      {sites.map((siteId) => {
+        const siteLog = hoursBySite[siteId];
+        if (!siteLog) return null;
+        return (
+          <Grid item key={siteId} xs={12} sm={6} md={4}>
+            <SiteHourCard siteLog={siteLog} />
+          </Grid>
+        );
+      })}
+      <Grid item xs={12}>
+        <Typography variant="h6" className="mt-2 text-end">
+          Total de horas: {totalHours}
+        </Typography>
+      </Grid>
+    </Grid>
   );
 }

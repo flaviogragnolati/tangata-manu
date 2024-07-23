@@ -23,7 +23,7 @@ type Props = {
 };
 
 export default function SiteRateAdminTable({ rates, sites, users }: Props) {
-  const [open, setOpen] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
   const [selectedRate, setSelectedRate] = useState<SiteRateFull | null>(null);
 
   const columns: GridColDef<Row>[] = [
@@ -96,18 +96,18 @@ export default function SiteRateAdminTable({ rates, sites, users }: Props) {
 
   const handleEditRate = (rate: SiteRateFull) => {
     setSelectedRate(rate);
-    setOpen(true);
+    setOpenEdit(true);
   };
 
   const handleCreateNewRate = () => {
     setSelectedRate(null);
-    setOpen(true);
+    setOpenEdit(true);
   };
 
   return (
     <>
       <Typography variant="h1" gutterBottom>
-        Administrador tarifas
+        Administrador de tarifas
       </Typography>
       <div style={{ height: 400, width: '100%' }}>
         <DataGrid
@@ -161,8 +161,8 @@ export default function SiteRateAdminTable({ rates, sites, users }: Props) {
       <BasicModal
         title={selectedRate ? 'Editar Tarifa' : 'Crear Tarifa'}
         dialogProps={{
-          open,
-          onClose: () => setOpen(false),
+          open: openEdit,
+          onClose: () => setOpenEdit(false),
           fullScreen: true,
         }}
       >
@@ -170,7 +170,7 @@ export default function SiteRateAdminTable({ rates, sites, users }: Props) {
           siteOptions={sites}
           userOptions={users}
           rate={selectedRate}
-          setOpen={setOpen}
+          setOpen={setOpenEdit}
         />
       </BasicModal>
     </>

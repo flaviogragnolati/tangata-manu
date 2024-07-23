@@ -299,43 +299,6 @@ export default function SalariesDashboard({ salaries, users, sites }: Props) {
       </Divider>
       <Grid container spacing={2}>
         {getDataDisplay(filter, isEmpty)}
-        {/* {isEmpty && <Typography>No hay datos para mostrar</Typography>} */}
-        {/* {!isEmpty && filter.groupBy === 'groupByUser' ? (
-          <SalaryByUser
-            usersById={usersById}
-            data={data}
-            totalAmount={totalAmount}
-            totalHours={totalHours}
-            extraSalaries={extraSalaries}
-          />
-        ) : (
-          <SalaryBySite
-            sitesById={sitesById}
-            data={data}
-            totalAmount={totalAmount}
-            totalHours={totalHours}
-          />
-        )} */}
-        {/* {!isEmpty && (
-          <Grid
-            item
-            container
-            xs={12}
-            direction="column"
-            alignContent="end"
-            alignItems="end"
-            alignSelf="center"
-          >
-            <Grid item xs={12}>
-              <Typography variant="h5">Total de horas: {totalHours}</Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h5">
-                Total Monto: {ARSformatter.format(totalAmount)}
-              </Typography>
-            </Grid>
-          </Grid>
-        )} */}
       </Grid>
     </>
   );

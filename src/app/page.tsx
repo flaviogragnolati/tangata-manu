@@ -21,8 +21,13 @@ export default async function Home() {
           width={250}
           height={200}
         />
-        <Link href="/api/auth/signin" className="text-xl">
-          Iniciar sesión
+        <Link href="/api/auth/signin">
+          <button
+            type="button"
+            className="mb-2 me-2 rounded-lg bg-gradient-to-br from-green-400 to-blue-600 px-5 py-3 text-center text-3xl font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-green-200 dark:focus:ring-green-800"
+          >
+            Iniciar sesión
+          </button>
         </Link>
       </main>
     );
@@ -33,6 +38,6 @@ export default async function Home() {
   } else if (session.user.role === 'ADMIN') {
     redirect('/admin');
   } else {
-    redirect('/app');
+    redirect('/user');
   }
 }

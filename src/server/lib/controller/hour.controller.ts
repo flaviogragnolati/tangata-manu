@@ -9,20 +9,17 @@ type UserHourLogWithPayload = Prisma.UserHourLogGetPayload<{
   };
 }>;
 
+export type NormalizedHourLogContent = {
+  userHourLogId: number;
+  siteName: string;
+  normalHours: number;
+  saturdayPreHours: number;
+  saturdayPostHours: number;
+};
+
 export type NormalizedHourLog = Record<
   number | string,
-  Record<
-    number | string,
-    Record<
-      number | string,
-      {
-        siteName: string;
-        normalHours: number;
-        saturdayPreHours: number;
-        saturdayPostHours: number;
-      }
-    >
-  >
+  Record<number | string, Record<number | string, NormalizedHourLogContent>>
 >;
 
 export function normalizeHourLogs(
@@ -34,6 +31,7 @@ export function normalizeHourLogs(
    *  2021[year]: {
    *   1[month]: {
    *   1[siteId]: {
+   *    userHourLogId: 1,
    *    siteName: 'Site 1',
    *    normalHours: 8,
    *    saturdayPreHours: 0,
@@ -60,31 +58,39 @@ export function normalizeHourLogs(
     const groupedByMonth = _.groupBy(yearLogs, 'month');
     normalizedHourLog[year] = {};
     _.forOwn(groupedByMonth, (monthLogs, month) => {
-      const groupedBySite = _.groupBy(monthLogs, 'siteId');
+      const groupedBySite = _.keyBy(monthLogs, 'siteId');
       normalizedHourLog[year]![month] = {};
-      _.forOwn(groupedBySite, (siteLogs, siteId) => {
+      _.forOwn(groupedBySite, (siteLog, siteId) => {
         const site = sites.find((site) => site.id === +siteId);
-        if (!site) {
+        if (!site || !siteLog) {
           return;
         }
-        const totalNormalHours = siteLogs.reduce(
-          (acc, curr) => acc + (curr?.normalHours ?? 0),
-          0,
-        );
-        const totalSaturdayPreHours = siteLogs.reduce(
-          (acc, curr) => acc + (curr?.saturdayPreHours ?? 0),
-          0,
-        );
-        const totalSaturdayPostHours = siteLogs.reduce(
-          (acc, curr) => acc + (curr?.saturdayPostHours ?? 0),
-          0,
-        );
         normalizedHourLog[year]![month]![siteId] = {
+          userHourLogId: siteLog?.id,
           siteName: site.name,
-          normalHours: totalNormalHours,
-          saturdayPreHours: totalSaturdayPreHours,
-          saturdayPostHours: totalSaturdayPostHours,
+          normalHours: siteLog.normalHours ?? 0,
+          saturdayPreHours: siteLog.saturdayPreHours ?? 0,
+          saturdayPostHours: siteLog.saturdayPostHours ?? 0,
         };
+
+        //   const totalNormalHours = siteLogs.reduce(
+        //     (acc, curr) => acc + (curr?.normalHours ?? 0),
+        //     0,
+        //   );
+        //   const totalSaturdayPreHours = siteLogs.reduce(
+        //     (acc, curr) => acc + (curr?.saturdayPreHours ?? 0),
+        //     0,
+        //   );
+        //   const totalSaturdayPostHours = siteLogs.reduce(
+        //     (acc, curr) => acc + (curr?.saturdayPostHours ?? 0),
+        //     0,
+        //   );
+        //   normalizedHourLog[year]![month]![siteId] = {
+        //     siteName: site.name,
+        //     normalHours: totalNormalHours,
+        //     saturdayPreHours: totalSaturdayPreHours,
+        //     saturdayPostHours: totalSaturdayPostHours,
+        //   };
       });
     });
   });

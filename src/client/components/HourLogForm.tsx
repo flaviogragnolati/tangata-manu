@@ -2,34 +2,47 @@
 import { groupBy } from 'lodash';
 import { useState } from 'react';
 import { LoadingButton } from '@mui/lab';
-import FormContainer from './Form/FormContainer';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { Divider, IconButton, Stack, Typography } from '@mui/material';
+import {
+  Button,
+  ButtonGroup,
+  Divider,
+  Grid,
+  IconButton,
+  Typography,
+} from '@mui/material';
 import {
   useForm,
   useFieldArray,
   SelectElement,
   TextFieldElement,
+  FormContainer,
 } from 'react-hook-form-mui';
 
 import { C } from '~/constants';
-import { dayjs } from '~/utils/dayjs';
+import { dayjs, getMonthName } from '~/utils/dayjs';
 import BasicModal from '~/components/BasicModal';
-import { type UserHourLogFormInput } from '~/schemas';
-import HourLogConfirmation from './HourLogConfirmation';
 import type { HourLogFull, SiteFull } from '~/types';
-import PreviousHourLogDetail from './PreviousHourLogDetail';
+import { type UserHourLogFormInput } from '~/schemas';
+import HourLogConfirmation from '~/components/HourLogConfirmation';
+import PreviousHourLogDetail from '~/components/PreviousHourLogDetail';
 
 type Props = {
   sites: SiteFull[];
   previousHourLogs: HourLogFull;
 };
 export default function HourLog({ sites, previousHourLogs }: Props) {
-  const CURRENT_MONTH = dayjs().format('MMMM');
-  const CURRENT_YEAR = dayjs().format('YYYY');
+  const currentMonth = dayjs().month();
+  const nextMonth = dayjs().add(1, 'month').month();
+  const previousMonth = dayjs().subtract(1, 'month').month();
+  const currentYear = dayjs().year();
+  const nextYear = dayjs().add(1, 'year').year();
+  const previousYear = dayjs().subtract(1, 'year').year();
 
   const [open, setOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
   const [hoursBySite, setHoursBySite] = useState<
     Record<number, UserHourLogFormInput['hours']>
   >({});
@@ -57,9 +70,74 @@ export default function HourLog({ sites, previousHourLogs }: Props) {
     name: 'hours',
   });
 
+  const handleMonthSelect = (month: number) => {
+    setSelectedMonth(month);
+  };
+
+  const handleYearSelect = (year: number) => {
+    setSelectedYear(year);
+  };
+
   return (
     <>
-      <PreviousHourLogDetail hours={previousHourLogs} />
+      <Typography variant="h1" gutterBottom>
+        Cargar horas
+      </Typography>
+      {(currentMonth === 11 || currentMonth === 0) && (
+        <ButtonGroup
+          size="large"
+          className="my-2 flex justify-center"
+          color="secondary"
+        >
+          {currentMonth === 0 && (
+            <Button
+              onClick={() => handleYearSelect(previousYear)}
+              variant={selectedYear === previousYear ? 'contained' : 'outlined'}
+            >
+              {previousYear}
+            </Button>
+          )}
+          <Button
+            onClick={() => handleYearSelect(currentYear)}
+            variant={selectedYear === currentYear ? 'contained' : 'outlined'}
+          >
+            {currentYear}
+          </Button>
+          {currentMonth === 11 && (
+            <Button
+              onClick={() => handleYearSelect(nextYear)}
+              variant={selectedYear === nextYear ? 'contained' : 'outlined'}
+            >
+              {nextYear}
+            </Button>
+          )}
+        </ButtonGroup>
+      )}
+      <ButtonGroup size="large" className="my-2 flex justify-center">
+        <Button
+          onClick={() => handleMonthSelect(previousMonth)}
+          variant={selectedMonth === previousMonth ? 'contained' : 'outlined'}
+        >
+          {getMonthName(previousMonth)}
+        </Button>
+        <Button
+          onClick={() => handleMonthSelect(currentMonth)}
+          variant={selectedMonth === currentMonth ? 'contained' : 'outlined'}
+        >
+          {getMonthName(currentMonth)}
+        </Button>
+        <Button
+          onClick={() => handleMonthSelect(nextMonth)}
+          variant={selectedMonth === nextMonth ? 'contained' : 'outlined'}
+        >
+          {getMonthName(nextMonth)}
+        </Button>
+      </ButtonGroup>
+      <PreviousHourLogDetail
+        hours={previousHourLogs}
+        month={selectedMonth}
+        year={selectedYear}
+      />
       <FormContainer<UserHourLogFormInput>
         formContext={methods}
         onSuccess={(values) => {
@@ -68,58 +146,92 @@ export default function HourLog({ sites, previousHourLogs }: Props) {
           setOpen(true);
         }}
         FormProps={{
-          className: 'w-full flex flex-col gap-2',
+          className: 'flex flex-col',
         }}
       >
-        <Typography variant="h6" className="text-center">
-          Cargar horas de: {CURRENT_MONTH} {CURRENT_YEAR}
-        </Typography>
-        <Stack direction="column" gap={1}>
+        <Divider className="mb-2 py-2">
+          <Typography variant="h5" className="text-center">
+            Cargar horas para: {getMonthName(selectedMonth)} {selectedYear}
+          </Typography>
+        </Divider>
+        <Grid
+          container
+          xs={12}
+          md={10}
+          gap={2}
+          alignItems="center"
+          alignSelf="center"
+          textAlign="center"
+          direction="column"
+        >
           {fields.map((field, idx) => {
             return (
-              <Stack key={field.id} direction="row" gap={2}>
-                <Typography variant="h6">{idx + 1}</Typography>
-                <SelectElement
-                  name={`hours.${idx}.site`}
-                  label="Sitios"
-                  options={siteOptions}
-                  control={methods.control}
-                  required
-                  fullWidth
-                />
-                <SelectElement
-                  name={`hours.${idx}.rate`}
-                  label="Tarifa"
-                  options={rateOptions}
-                  control={methods.control}
-                  required
-                  fullWidth
-                />
-                <TextFieldElement
-                  name={`hours.${idx}.hours`}
-                  label="Cantidad"
-                  type="number"
-                  control={methods.control}
-                  required
-                  fullWidth
-                />
-                <IconButton onClick={() => remove(idx)} color="error">
-                  <DeleteIcon />
-                </IconButton>
-              </Stack>
+              <Grid
+                item
+                container
+                key={field.id}
+                xs={12}
+                spacing={1}
+                alignItems="center"
+                alignSelf="center"
+                textAlign="center"
+                direction="row"
+              >
+                <Grid item>
+                  <Typography variant="h6">{idx + 1}</Typography>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <SelectElement
+                    name={`hours.${idx}.site`}
+                    label="Sitio"
+                    options={siteOptions}
+                    required
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <SelectElement
+                    name={`hours.${idx}.rate`}
+                    label="Tarifa"
+                    options={rateOptions}
+                    required
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <TextFieldElement
+                    name={`hours.${idx}.hours`}
+                    label="Cantidad"
+                    type="number"
+                    required
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item>
+                  <IconButton onClick={() => remove(idx)} color="error">
+                    <DeleteIcon />
+                  </IconButton>
+                </Grid>
+              </Grid>
             );
           })}
-          <IconButton
-            onClick={() =>
-              append({ site: undefined!, rate: undefined!, hours: undefined! })
-            }
-            color="primary"
-            className="self-center"
-          >
-            <AddCircleIcon />
-            Agregar
-          </IconButton>
-        </Stack>
+          <Grid item xs={12}>
+            <IconButton
+              onClick={() =>
+                append({
+                  site: undefined!,
+                  rate: undefined!,
+                  hours: undefined!,
+                })
+              }
+              color="primary"
+              className="self-center"
+            >
+              <AddCircleIcon />
+              Agregar
+            </IconButton>
+          </Grid>
+        </Grid>
         <Divider />
         <LoadingButton
           disabled={!isValid}
@@ -144,6 +256,8 @@ export default function HourLog({ sites, previousHourLogs }: Props) {
           setOpen={setOpen}
           useFormMethods={methods}
           hoursBySite={hoursBySite}
+          month={selectedMonth}
+          year={selectedYear}
         />
       </BasicModal>
     </>

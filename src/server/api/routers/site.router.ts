@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 
 import { siteSchema, siteRateSchema } from '~/schemas';
@@ -32,13 +33,22 @@ export const siteRouter = createTRPCRouter({
     .input(siteRateSchema)
     .mutation(async ({ input, ctx }) => {
       // 1. Check if there is another `active` SiteRate for the same site & userId combination
-      const activeSiteRate = await ctx.db.siteRate.findFirst({
-        where: {
-          siteId: input.siteId,
-          userId: input.userId,
-          active: true,
-        },
-      });
+      const activeSiteRate = input.userId
+        ? await ctx.db.siteRate.findFirst({
+            where: {
+              siteId: input.siteId,
+              userId: input.userId,
+              active: true,
+            },
+          })
+        : await ctx.db.siteRate.findFirst({
+            where: {
+              siteId: input.siteId,
+              active: true,
+            },
+          });
+
+      console.log('activeSiteRate', activeSiteRate);
 
       const data = {
         ...input,
@@ -49,9 +59,12 @@ export const siteRouter = createTRPCRouter({
 
       try {
         if (activeSiteRate) {
-          const [updatedSiteRate, newSiteRate] = await ctx.db.$transaction([
+          const [_updatedSiteRate, newSiteRate] = await ctx.db.$transaction([
             ctx.db.siteRate.updateMany({
-              where: { siteId: input.siteId },
+              where: {
+                siteId: input.siteId,
+                userId: input.userId ? input.userId : null,
+              }, // only update 'generic' siteRates
               data: { active: false },
             }),
             ctx.db.siteRate.create({ data }),
@@ -66,6 +79,20 @@ export const siteRouter = createTRPCRouter({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Error creating site rate',
+        });
+      }
+    }),
+  deleteSiteRate: adminProcedure
+    .input(z.number())
+    .mutation(async ({ input, ctx }) => {
+      try {
+        return await ctx.db.siteRate.delete({ where: { id: input } });
+      } catch (err) {
+        const error = err as Error;
+        console.error(`Error deleting site rate: ${error.message}`);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error deleting site rate',
         });
       }
     }),

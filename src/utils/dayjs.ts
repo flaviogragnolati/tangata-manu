@@ -22,6 +22,6 @@ dayjs.extend(isSameOrBefore);
 
 export { dayjs, Dayjs };
 
-export function getMonthNameInLocaleFromDate(date: string | Date | Dayjs) {
-  return dayjs(date).format('MMMM');
-}
+export const getMonthName = (month: number) => {
+  return dayjs().month(month).format('MMMM');
+};
