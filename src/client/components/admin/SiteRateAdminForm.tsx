@@ -124,6 +124,7 @@ export default function SiteRateAdminForm({
           variant="contained"
           color="success"
           type="submit"
+          size="large"
         >
           {isEdit ? 'Editar' : 'Crear'}
         </LoadingButton>

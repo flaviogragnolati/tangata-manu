@@ -94,6 +94,7 @@ export default function EditHourLog({ hourLog, setOpen }: Props) {
             type="submit"
             className="mt-3 max-w-xs self-center"
             loading={isPending}
+            size="large"
           >
             Actualizar horas
           </LoadingButton>

@@ -106,6 +106,7 @@ export default function SiteAdminTable({ sites }: Props) {
           onClick={handleCreateNewSite}
           variant="contained"
           color="primary"
+          size="large"
         >
           Crear nuevo sitio
         </Button>

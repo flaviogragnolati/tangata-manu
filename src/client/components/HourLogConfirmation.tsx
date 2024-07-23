@@ -117,6 +117,7 @@ export default function HourLogConfirmation({
             className="mt-3 max-w-xs self-center"
             onClick={() => setOpen(false)}
             disabled={!useFormMethods.formState.isValid || isPending}
+            size="large"
           >
             Volver
           </Button>
@@ -127,6 +128,7 @@ export default function HourLogConfirmation({
             color="success"
             className="mt-3 max-w-xs self-center"
             onClick={handleConfirmLoadHours}
+            size="large"
           >
             Confirmar
           </LoadingButton>

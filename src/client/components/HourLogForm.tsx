@@ -239,6 +239,7 @@ export default function HourLog({ sites, previousHourLogs }: Props) {
           color="success"
           type="submit"
           className="mt-3 max-w-xs self-center"
+          size="large"
         >
           Cargar horas
         </LoadingButton>

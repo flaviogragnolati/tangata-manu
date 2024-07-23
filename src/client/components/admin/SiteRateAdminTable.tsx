@@ -154,6 +154,7 @@ export default function SiteRateAdminTable({ rates, sites, users }: Props) {
           onClick={handleCreateNewRate}
           variant="contained"
           color="primary"
+          size="large"
         >
           Cargar nueva tarifa
         </Button>

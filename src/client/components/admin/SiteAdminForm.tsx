@@ -87,6 +87,7 @@ export default function SiteAdminForm({ site, setOpen }: Props) {
           variant="contained"
           color="success"
           type="submit"
+          size="large"
         >
           {isEdit ? 'Actualizar Sitio' : 'Crear Sitio'}
         </LoadingButton>
