@@ -36,7 +36,38 @@ function filterSalaries(
   if (filter.groupBy === 'groupByUser') {
     const salariesByUser = _.groupBy(salaries.userSalaries, 'userId');
     _.forOwn(salariesByUser, (salariesByUser, userId) => {
-      let extraSalaryAcc = 0;
+      const extraSalaryAcc = salaries.userExtraSalaries.reduce(
+        (acc, extraSalary) => {
+          // console.log('FILTER MONTH', salaries.userExtraSalaries, filter.month);
+          if (filter.month < 6) {
+            // should sum all the extra salaries for the user from year=filter.year, and from month=0 to month=filter.month
+
+            if (
+              extraSalary[0] === userId &&
+              extraSalary[1] === filter.year &&
+              extraSalary[2] >= 0 &&
+              extraSalary[2] < filter.month
+            ) {
+              return extraSalary[3] + acc;
+            }
+          } else if (filter.month > 5) {
+            // should sum all the extra salaries for the user from year=filter.year, and from month=5 to month=11
+
+            if (
+              extraSalary[0] === userId &&
+              extraSalary[1] === filter.year &&
+              extraSalary[2] >= 5 &&
+              extraSalary[2] <= filter.month
+            ) {
+              return extraSalary[3] + acc;
+            }
+          }
+          return acc;
+        },
+        0,
+      );
+      extraSalaryByUser[userId] = extraSalaryAcc;
+
       const filtered = salariesByUser.filter((salary) => {
         const date = dayjs().year(salary.year).month(salary.month);
         if (date.year() === filter.year && date.month() === filter.month) {
@@ -46,32 +77,6 @@ function filterSalaries(
         }
         return false;
       });
-      if (filter.month < 6) {
-        // should sum all the extra salaries for the user from year=filter.year, and from month=0 to month=filter.month
-        salaries.userExtraSalaries.forEach((extraSalary) => {
-          if (
-            extraSalary[0] === userId &&
-            extraSalary[1] === filter.year &&
-            extraSalary[2] >= 0 &&
-            extraSalary[2] < filter.month
-          ) {
-            extraSalaryAcc += extraSalary[3];
-          }
-        });
-      } else if (filter.month >= 6) {
-        // should sum all the extra salaries for the user from year=filter.year, and from month=6 to month=11
-        salaries.userExtraSalaries.forEach((extraSalary) => {
-          if (
-            extraSalary[0] === userId &&
-            extraSalary[1] === filter.year &&
-            extraSalary[2] >= 6 &&
-            extraSalary[2] <= filter.month
-          ) {
-            extraSalaryAcc += extraSalary[3];
-          }
-        });
-      }
-      extraSalaryByUser[userId] = extraSalaryAcc;
       filteredSalaries[userId] = filtered.length > 0 ? filtered : null;
     });
   } else if (filter.groupBy === 'groupBySite') {
