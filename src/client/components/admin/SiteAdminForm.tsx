@@ -1,6 +1,6 @@
 'use client';
 
-import { Stack } from '@mui/material';
+import { Grid } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -66,32 +66,48 @@ export default function SiteAdminForm({ site, setOpen }: Props) {
       formContext={methods}
       handleSubmit={handleSubmit(onSubmitHandler)}
       FormProps={{
-        className: 'w-5/6',
+        className: 'flex flex-col',
       }}
     >
-      <Stack spacing={2} direction="column" gap={2}>
-        <TextFieldElement
-          fullWidth
-          name="name"
-          label="Nombre del sitio"
-          required
-        />
-        <TextFieldElement name="location" label="Ubicación" />
-        <TextareaAutosizeElement
-          name="description"
-          label="Descripción del sitio"
-        />
-        <LoadingButton
-          loading={isPending}
-          disabled={isPending || !isValid}
-          variant="contained"
-          color="success"
-          type="submit"
-          size="large"
-        >
-          {isEdit ? 'Actualizar Sitio' : 'Crear Sitio'}
-        </LoadingButton>
-      </Stack>
+      <Grid
+        container
+        spacing={2}
+        xs={11}
+        md={8}
+        alignSelf="center"
+        textAlign="center"
+      >
+        <Grid item xs={12}>
+          <TextFieldElement
+            fullWidth
+            name="name"
+            label="Nombre del sitio"
+            required
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextFieldElement name="location" label="Ubicación" fullWidth />
+        </Grid>
+        <Grid item xs={12}>
+          <TextareaAutosizeElement
+            name="description"
+            label="Descripción del sitio"
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <LoadingButton
+            loading={isPending}
+            disabled={isPending || !isValid}
+            variant="contained"
+            color="success"
+            type="submit"
+            size="large"
+          >
+            {isEdit ? 'Actualizar Sitio' : 'Crear Sitio'}
+          </LoadingButton>
+        </Grid>
+      </Grid>
     </FormContainer>
   );
 }

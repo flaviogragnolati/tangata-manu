@@ -19,7 +19,7 @@ export default async function Layout({
   }
 
   return (
-    <main className="mx-5 my-2 flex min-h-screen flex-col items-center">
+    <main className="flex min-h-screen flex-col items-center bg-zinc-50 px-5 py-2">
       {children}
     </main>
   );

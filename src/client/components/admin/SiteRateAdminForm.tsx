@@ -3,7 +3,7 @@
 import { LoadingButton } from '@mui/lab';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Divider, Stack, Typography } from '@mui/material';
+import { Divider, Grid, Typography } from '@mui/material';
 import {
   useForm,
   type SubmitHandler,
@@ -75,60 +75,92 @@ export default function SiteRateAdminForm({
     <FormContainer
       formContext={methods}
       handleSubmit={handleSubmit(onSubmitHandler)}
+      FormProps={{
+        className: 'flex flex-col',
+      }}
     >
-      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
-        {isEdit ? 'Editar' : 'Crear'} tarifa
-      </Typography>
-      <Stack spacing={2} direction="column" gap={2}>
-        <SelectElement
-          name="siteId"
-          label="Sitio"
-          options={siteOptions}
-          required
-        />
-        <TextFieldElement
-          name="normalRate"
-          label="Valor de hora normal (Lunes a Viernes)"
-          type="number"
-          required
-        />
-        <TextFieldElement
-          name="saturdayPreRate"
-          label="Valor de hora sábado hasta las 14:00"
-          type="number"
-        />
-        <TextFieldElement
-          name="saturdayPostRate"
-          label="Valor de hora sábado después de las 14:00"
-          type="number"
-        />
-        <AutocompleteElement
-          name="userId"
-          label="Usuario"
-          matchId
-          options={userOptions}
-          autocompleteProps={{
-            getOptionLabel: (option) => option.label,
-            noOptionsText: 'No se encontraron usuarios',
-            clearOnEscape: true,
-            autoHighlight: true,
-            autoComplete: true,
-            autoSelect: true,
-          }}
-        />
-        {isEdit && <SwitchElement name="active" label="Activo" />}
+      <Grid
+        container
+        xs={11}
+        md={8}
+        spacing={2}
+        alignSelf="center"
+        textAlign="center"
+      >
+        <Grid item xs={12}>
+          <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
+            {isEdit ? 'Editar' : 'Crear'} tarifa
+          </Typography>
+        </Grid>
+        <Grid item xs={12}>
+          <SelectElement
+            name="siteId"
+            label="Sitio"
+            options={siteOptions}
+            required
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextFieldElement
+            name="normalRate"
+            label="Valor de hora normal (Lunes a Viernes)"
+            type="number"
+            required
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextFieldElement
+            name="saturdayPreRate"
+            label="Valor de hora sábado hasta las 14:00"
+            type="number"
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextFieldElement
+            name="saturdayPostRate"
+            label="Valor de hora sábado después de las 14:00"
+            type="number"
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <AutocompleteElement
+            name="userId"
+            label="Usuario"
+            matchId
+            options={userOptions}
+            autocompleteProps={{
+              getOptionLabel: (option) => option.label,
+              noOptionsText: 'No se encontraron usuarios',
+              clearOnEscape: true,
+              autoHighlight: true,
+              autoComplete: true,
+              autoSelect: true,
+            }}
+          />
+        </Grid>
+        {isEdit && (
+          <Grid item xs={12}>
+            <SwitchElement name="active" label="Activo" />
+          </Grid>
+        )}
         <Divider />
-        <LoadingButton
-          loading={isPending}
-          disabled={isPending || !isValid}
-          variant="contained"
-          color="success"
-          type="submit"
-          size="large"
-        >
-          {isEdit ? 'Editar' : 'Crear'}
-        </LoadingButton>
-      </Stack>
+        <Grid item xs={12}>
+          <LoadingButton
+            loading={isPending}
+            disabled={isPending || !isValid}
+            variant="contained"
+            color="success"
+            type="submit"
+            size="large"
+          >
+            {isEdit ? 'Editar' : 'Crear'}
+          </LoadingButton>
+        </Grid>
+      </Grid>
     </FormContainer>
   );
 }

@@ -33,9 +33,7 @@ export default async function Home() {
     );
   }
 
-  if (session.user.role === 'SUPERADMIN') {
-    redirect('/superadmin');
-  } else if (session.user.role === 'ADMIN') {
+  if (session.user.role === 'SUPERADMIN' || session.user.role === 'ADMIN') {
     redirect('/admin');
   } else {
     redirect('/user');
