@@ -80,7 +80,7 @@ export default function HourLog({ sites, previousHourLogs }: Props) {
 
   return (
     <>
-      <Typography variant="h1" gutterBottom>
+      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Cargar horas
       </Typography>
       {(currentMonth === 11 || currentMonth === 0) && (

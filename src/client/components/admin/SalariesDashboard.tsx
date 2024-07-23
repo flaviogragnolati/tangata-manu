@@ -216,7 +216,7 @@ export default function SalariesDashboard({ salaries, users, sites }: Props) {
 
   return (
     <>
-      <Typography variant="h1" gutterBottom>
+      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Salarios
       </Typography>
       <FormContainer<Filter>

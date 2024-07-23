@@ -72,7 +72,7 @@ export default function HourLogHistoryByUser({ hourLogs }: Props) {
 
   return (
     <div style={{ height: 400, width: '100%' }}>
-      <Typography variant="h1" gutterBottom>
+      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Registro de horas por usuario
       </Typography>
       <DataGrid

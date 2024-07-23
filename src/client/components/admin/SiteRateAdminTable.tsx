@@ -106,7 +106,7 @@ export default function SiteRateAdminTable({ rates, sites, users }: Props) {
 
   return (
     <>
-      <Typography variant="h1" gutterBottom>
+      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Administrador de tarifas
       </Typography>
       <div style={{ height: 400, width: '100%' }}>

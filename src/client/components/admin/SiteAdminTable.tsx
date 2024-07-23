@@ -69,7 +69,7 @@ export default function SiteAdminTable({ sites }: Props) {
 
   return (
     <>
-      <Typography variant="h1" gutterBottom>
+      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Administrador de sitios
       </Typography>
       <div style={{ height: 400, width: '100%' }}>

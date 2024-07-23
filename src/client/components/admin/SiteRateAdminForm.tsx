@@ -76,7 +76,7 @@ export default function SiteRateAdminForm({
       formContext={methods}
       handleSubmit={handleSubmit(onSubmitHandler)}
     >
-      <Typography variant="h1" gutterBottom>
+      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         {isEdit ? 'Editar' : 'Crear'} tarifa
       </Typography>
       <Stack spacing={2} direction="column" gap={2}>

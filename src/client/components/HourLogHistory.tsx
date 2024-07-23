@@ -31,7 +31,7 @@ export default function HourLogHistory({ hours }: Props) {
   const years = Object.keys(hours);
   return (
     <>
-      <Typography variant="h1" gutterBottom>
+      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Historial de horas
       </Typography>
       <Grid container xs={12}>
