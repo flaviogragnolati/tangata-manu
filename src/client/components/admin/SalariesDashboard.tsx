@@ -38,7 +38,6 @@ function filterSalaries(
     _.forOwn(salariesByUser, (salariesByUser, userId) => {
       const extraSalaryAcc = salaries.userExtraSalaries.reduce(
         (acc, extraSalary) => {
-          // console.log('FILTER MONTH', salaries.userExtraSalaries, filter.month);
           if (filter.month < 6) {
             // should sum all the extra salaries for the user from year=filter.year, and from month=0 to month=filter.month
 
@@ -46,7 +45,7 @@ function filterSalaries(
               extraSalary[0] === userId &&
               extraSalary[1] === filter.year &&
               extraSalary[2] >= 0 &&
-              extraSalary[2] < filter.month
+              extraSalary[2] <= filter.month
             ) {
               return extraSalary[3] + acc;
             }
