@@ -234,7 +234,7 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
         </Grid>
         <Divider />
         <LoadingButton
-          disabled={!isValid}
+          disabled={!isValid || fields.length === 0}
           variant="contained"
           color="success"
           type="submit"
