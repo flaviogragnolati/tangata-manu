@@ -1,6 +1,8 @@
 import _ from 'lodash';
-import type { Site, Prisma } from '@prisma/client';
 import dayjs from 'dayjs';
+import type { Site, Prisma } from '@prisma/client';
+
+import type { RateType, UserHourLogFormInput } from '~/schemas';
 
 type UserHourLogWithPayload = Prisma.UserHourLogGetPayload<{
   include: {
@@ -272,4 +274,29 @@ export function normalizeUserSalaries(
   });
 
   return { userSalaries, userExtraSalaries };
+}
+
+function sumHoursByRate(hours: UserHourLogFormInput['hours'], rate: RateType) {
+  return hours.reduce((acc, curr) => {
+    if (curr.rate === rate) {
+      return acc + curr.hours;
+    }
+    return acc;
+  }, 0);
+}
+
+export function parseConfirmationHours(
+  hours: Record<number, UserHourLogFormInput['hours']>,
+  sites: Site[],
+) {
+  return Object.entries(hours).map(([siteId, hours]) => {
+    const site = sites.find((site) => site.id === Number(siteId))!;
+    return {
+      siteId: site.id,
+      siteName: site.name,
+      normal: sumHoursByRate(hours, 'normal'),
+      saturdayPre: sumHoursByRate(hours, 'saturdayPre'),
+      saturdayPost: sumHoursByRate(hours, 'saturdayPost'),
+    };
+  });
 }

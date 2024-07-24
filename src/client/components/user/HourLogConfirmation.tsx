@@ -11,6 +11,7 @@ import { dayjs } from '~/utils/dayjs';
 import type { SiteFull } from '~/types';
 import { showToast } from '~/client-utils/toast';
 import { type UserHourLogFormInput } from '~/schemas';
+import { parseConfirmationHours } from '~/server/lib/controller/hour.controller';
 
 type Props = {
   setOpen: (value: boolean) => void;
@@ -29,6 +30,8 @@ export default function HourLogConfirmation({
   year,
 }: Props) {
   const router = useRouter();
+
+  const parsedHours = parseConfirmationHours(hoursBySite, sites);
 
   const { mutate, isError, error, isPending } =
     api.hours.addUserHourLog.useMutation({
@@ -66,22 +69,29 @@ export default function HourLogConfirmation({
       textAlign="center"
       direction="column"
     >
-      {Object.entries(hoursBySite).map(([siteId, hours]) => {
-        const site = sites.find((site) => site.id === Number(siteId))!;
+      {parsedHours.map(({ siteId, siteName, ...hours }) => {
+        const totalHours = Object.values(hours).reduce(
+          (acc, curr) => acc + curr,
+          0,
+        );
         return (
           <Grid container item key={siteId} xs={12} md={4} spacing={1}>
             <Grid item xs={12}>
               <Typography variant="h4" gutterBottom>
-                {site?.name}
+                {siteName}
               </Typography>
             </Grid>
 
             <Grid item xs={12}>
-              {hours.map((hour, idx) => (
-                <Typography key={idx} variant="body1">
-                  {C.rateTypesMap[hour.rate]}: <strong>{hour.hours} hs</strong>
-                </Typography>
-              ))}
+              {C.rateTypes.map((rate, idx) => {
+                const rateHours = hours[rate];
+                if (!rateHours) return null;
+                return (
+                  <Typography key={idx} variant="body1">
+                    {C.rateTypesMap[rate]}: <strong>{rateHours} hs</strong>
+                  </Typography>
+                );
+              })}
             </Grid>
 
             <Grid item xs={12}>
@@ -90,8 +100,7 @@ export default function HourLogConfirmation({
                 fontWeight={'fontWeightBold'}
                 gutterBottom
               >
-                Total {site?.name}:{' '}
-                {hours.reduce((acc, curr) => acc + curr.hours, 0)} hs
+                Total {siteName}: {totalHours} hs
               </Typography>
             </Grid>
           </Grid>
