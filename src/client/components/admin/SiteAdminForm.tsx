@@ -41,7 +41,7 @@ export default function SiteAdminForm({ site, setOpen }: Props) {
     isError,
     isPending,
     error,
-  } = api.site.createSite.useMutation({
+  } = api.site.upsertSite.useMutation({
     onSuccess: () => {
       showToast('success', 'Sitio creado correctamente');
       methods.reset();

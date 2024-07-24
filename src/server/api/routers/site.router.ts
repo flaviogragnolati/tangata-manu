@@ -5,28 +5,43 @@ import { siteSchema, siteRateSchema } from '~/schemas';
 import {
   adminProcedure,
   createTRPCRouter,
-  superAdminProcedure,
   userProcedure,
 } from '~/server/api/trpc';
 
 export const siteRouter = createTRPCRouter({
-  createSite: superAdminProcedure
+  upsertSite: adminProcedure
     .input(siteSchema)
     .mutation(async ({ input, ctx }) => {
+      const { id, ...siteData } = input;
       const data = {
-        ...input,
+        ...siteData,
         createdById: ctx.user.id,
       };
-
-      try {
-        return await ctx.db.site.create({ data });
-      } catch (err) {
-        const error = err as Error;
-        console.error(`Error creating site: ${error.message}`);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Error creating site',
-        });
+      if (id) {
+        try {
+          return await ctx.db.site.update({
+            where: { id },
+            data,
+          });
+        } catch (err) {
+          const error = err as Error;
+          console.error(`Error updating site: ${error.message}`);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Error updating site',
+          });
+        }
+      } else {
+        try {
+          return await ctx.db.site.create({ data });
+        } catch (err) {
+          const error = err as Error;
+          console.error(`Error creating site: ${error.message}`);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Error creating site',
+          });
+        }
       }
     }),
   createSiteRate: adminProcedure
@@ -48,12 +63,8 @@ export const siteRouter = createTRPCRouter({
             },
           });
 
-      console.log('activeSiteRate', activeSiteRate);
-
       const data = {
         ...input,
-        saturdayPreRate: input.saturdayPreRate ?? input.normalRate * 1.25,
-        saturdayPostRate: input.saturdayPostRate ?? input.normalRate * 1.5,
         createdById: ctx.user.id,
       };
 
