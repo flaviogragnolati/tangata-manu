@@ -68,7 +68,9 @@ export default function UserSalaryCard({ user, salary, extraSalary }: Props) {
                   >
                     <TableCell align="center">{row.siteName}</TableCell>
                     <TableCell align="center">{row.totalHours}</TableCell>
-                    <TableCell align="center">{row.totalAmount}</TableCell>
+                    <TableCell align="center">
+                      {ARSformatter.format(row.totalAmount)}
+                    </TableCell>
                   </TableRow>
                 );
               })}
