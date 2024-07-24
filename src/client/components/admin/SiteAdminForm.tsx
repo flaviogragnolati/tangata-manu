@@ -15,7 +15,7 @@ import { api } from '~/trpc/react';
 import { type SiteFull } from '~/types';
 import { showToast } from '~/client-utils/toast';
 import { siteSchema, type Site } from '~/schemas';
-import FormContainer from '~/components/Form/FormContainer';
+import FormContainer from '~/components/form/FormContainer';
 
 type Props = {
   site?: SiteFull | null;

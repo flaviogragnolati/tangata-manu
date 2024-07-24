@@ -14,8 +14,8 @@ import {
 import C from '~/constants';
 import { dayjs } from '~/utils/dayjs';
 import { ARSformatter } from '~/utils/helpers';
-import UserSalaryCard from '~/components/UserSalaryCard';
-import FormContainer from '~/components/Form/FormContainer';
+import FormContainer from '~/components/form/FormContainer';
+import UserSalaryCard from '~/components/admin/UserSalaryCard';
 import SiteSalaryCard from '~/components/admin/SiteSalaryCard';
 import type { GroupedSalaries, UserSalariesWithExtraSalary } from '~/types';
 

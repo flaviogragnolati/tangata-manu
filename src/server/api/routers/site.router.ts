@@ -59,6 +59,7 @@ export const siteRouter = createTRPCRouter({
 
       try {
         if (activeSiteRate) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const [_updatedSiteRate, newSiteRate] = await ctx.db.$transaction([
             ctx.db.siteRate.updateMany({
               where: {

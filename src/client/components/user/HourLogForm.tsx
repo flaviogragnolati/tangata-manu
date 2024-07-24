@@ -21,18 +21,18 @@ import {
 } from 'react-hook-form-mui';
 
 import { C } from '~/constants';
+import BasicModal from '~/components/ui/BasicModal';
 import { dayjs, getMonthName } from '~/utils/dayjs';
-import BasicModal from '~/components/BasicModal';
 import type { HourLogFull, SiteFull } from '~/types';
 import { type UserHourLogFormInput } from '~/schemas';
-import HourLogConfirmation from '~/components/HourLogConfirmation';
-import PreviousHourLogDetail from '~/components/PreviousHourLogDetail';
+import HourLogConfirmation from '~/components/user/HourLogConfirmation';
+import PreviousHourLogDetail from '~/components/user/PreviousHourLogDetail';
 
 type Props = {
   sites: SiteFull[];
   previousHourLogs: HourLogFull;
 };
-export default function HourLog({ sites, previousHourLogs }: Props) {
+export default function HourLogForm({ sites, previousHourLogs }: Props) {
   const currentMonth = dayjs().month();
   const nextMonth = dayjs().add(1, 'month').month();
   const previousMonth = dayjs().subtract(1, 'month').month();

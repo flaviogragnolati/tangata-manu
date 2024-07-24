@@ -171,16 +171,6 @@ export const hoursRouter = createTRPCRouter({
 
       const sites = await ctx.db.site.findMany();
 
-      // const mockHourLogs =
-      //   [] ||
-      //   [...hourlogs, ...hourlogs, ...hourlogs].map((hourlog, idx) => {
-      //     return {
-      //       ...hourlog,
-      //       year: 2023,
-      //       month: idx % 2 === 0 ? 1 + idx : idx,
-      //     };
-      //   });
-
       return normalizeHourLogs(hourlogs, sites);
     }),
   addUserHourLog: userProcedure

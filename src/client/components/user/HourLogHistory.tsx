@@ -5,7 +5,7 @@ import { capitalize } from 'lodash';
 import { Divider, Grid, Typography } from '@mui/material';
 
 import type { HourLogFull } from '~/types';
-import BasicModal from '~/components/BasicModal';
+import BasicModal from '~/client/components/ui/BasicModal';
 import { dayjs, getMonthName } from '~/utils/dayjs';
 import EditHourLog from '~/components/user/EditHourLog';
 import SiteHourCard from '~/components/user/SiteHourCard';

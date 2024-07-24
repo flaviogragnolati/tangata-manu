@@ -1,5 +1,5 @@
 import { api } from '~/trpc/server';
-import BackButton from '~/components/BackButton';
+import BackButton from '~/client/components/ui/BackButton';
 import SalariesDashboard from '~/components/admin/SalariesDashboard';
 
 export default async function UserSalariesPage() {

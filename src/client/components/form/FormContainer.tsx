@@ -9,7 +9,6 @@ import {
   useForm,
   FormProvider as ReactHookFormProvider,
   type FieldValues,
-  type FormProviderProps,
   type UseFormProps,
   type SubmitHandler,
   type UseFormReturn,

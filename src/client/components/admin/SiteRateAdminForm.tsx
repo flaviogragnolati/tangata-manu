@@ -17,7 +17,7 @@ import { api } from '~/trpc/react';
 import { type SiteRateFull } from '~/types';
 import { showToast } from '~/client-utils/toast';
 import { siteRateSchema, type SiteRate } from '~/schemas';
-import FormContainer from '~/components/Form/FormContainer';
+import FormContainer from '~/client/components/form/FormContainer';
 
 type Props = {
   rate?: SiteRateFull | null;

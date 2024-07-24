@@ -1,6 +1,6 @@
 import { api } from '~/trpc/server';
-import BackButton from '~/components/BackButton';
-import HourLogHistoryByUser from '~/components/HourLogHistoryByUser';
+import BackButton from '~/client/components/ui/BackButton';
+import HourLogHistoryByUser from '~/components/admin/HourLogHistoryByUser';
 
 export default async function UsersHoursAdminPage() {
   const allHours = await api.hours.getAllHourLogs();

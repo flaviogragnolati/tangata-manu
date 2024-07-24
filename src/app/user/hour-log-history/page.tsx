@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 
 import { api } from '~/trpc/server';
-import BackButton from '~/components/BackButton';
+import BackButton from '~/client/components/ui/BackButton';
 import { getServerAuthSession } from '~/server/auth';
-import HourLogHistory from '~/components/HourLogHistory';
+import HourLogHistory from '~/components/user/HourLogHistory';
 
 export default async function HourLogHistoryPage() {
   const session = await getServerAuthSession();

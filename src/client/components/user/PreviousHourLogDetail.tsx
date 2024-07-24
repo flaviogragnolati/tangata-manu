@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Grid, Typography } from '@mui/material';
 
 import type { HourLogFull } from '~/types';
-import BasicModal from '~/components/BasicModal';
+import BasicModal from '~/components/ui/BasicModal';
 import EditHourLog from '~/components/user/EditHourLog';
 import SiteHourCard from '~/components/user/SiteHourCard';
 import { type NormalizedHourLogContent } from '~/server/lib/controller/hour.controller';

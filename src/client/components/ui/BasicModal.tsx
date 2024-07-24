@@ -41,7 +41,7 @@ export default function BasicModal({
             <IconButton
               edge="start"
               color="inherit"
-              onClick={(event) =>
+              onClick={(_event) =>
                 typeof onClose === 'function'
                   ? onClose({}, 'escapeKeyDown')
                   : undefined

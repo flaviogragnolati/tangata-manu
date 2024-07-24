@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 
 import { api } from '~/trpc/server';
-import BackButton from '~/components/BackButton';
-import HourLogForm from '~/components/HourLogForm';
+import BackButton from '~/client/components/ui/BackButton';
+import HourLogForm from '~/components/user/HourLogForm';
 import { getServerAuthSession } from '~/server/auth';
 
 export default async function HourLogPage() {

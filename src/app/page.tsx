@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 
 import logo from 'public/assets/consultorios-medicos.jpg';
 
-import Title from '~/components/Title';
+import Title from '~/client/components/ui/Title';
 import { getServerAuthSession } from '~/server/auth';
 
 export default async function Home() {

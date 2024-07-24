@@ -12,7 +12,7 @@ import {
 
 import { dayjs } from '~/utils/dayjs';
 import { type SiteFull } from '~/types';
-import BasicModal from '~/components/BasicModal';
+import BasicModal from '~/components/ui/BasicModal';
 import SiteAdminForm from '~/components/admin/SiteAdminForm';
 
 type Row = SiteFull;

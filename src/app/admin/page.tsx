@@ -1,6 +1,6 @@
-import Title from '~/components/Title';
-import LinkButton from '~/components/LinkButton';
-import LogoutButton from '~/components/LogoutButton';
+import Title from '~/client/components/ui/Title';
+import LinkButton from '~/client/components/ui/LinkButton';
+import LogoutButton from '~/client/components/ui/LogoutButton';
 
 export default async function AdminHome() {
   return (
