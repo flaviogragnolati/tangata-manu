@@ -21,7 +21,7 @@ import FormContainer from '~/client/components/form/FormContainer';
 
 type Props = {
   rate?: SiteRateFull | null;
-  siteOptions: { id: number; label: string }[];
+  siteOptions: { id: number; label: string; allowsExtraHours: boolean }[];
   userOptions: { id: string; label: string }[];
   setOpen: (value: boolean) => void;
 };
@@ -45,6 +45,8 @@ export default function SiteRateAdminForm({
     handleSubmit,
     formState: { isValid },
   } = methods;
+
+  const selectedSite = methods.watch('siteId');
 
   const {
     mutate: createSiteRate,
@@ -113,17 +115,25 @@ export default function SiteRateAdminForm({
         <Grid item xs={12}>
           <TextFieldElement
             name="saturdayPreRate"
-            label="Valor de hora sábado hasta las 14:00"
+            label="Valor de hora sábado hasta las 14:30"
             type="number"
             fullWidth
+            disabled={
+              !siteOptions.find((site) => site.id === selectedSite)
+                ?.allowsExtraHours
+            }
           />
         </Grid>
         <Grid item xs={12}>
           <TextFieldElement
             name="saturdayPostRate"
-            label="Valor de hora sábado después de las 14:00"
+            label="Valor de hora sábado después de las 14:30"
             type="number"
             fullWidth
+            disabled={
+              !siteOptions.find((site) => site.id === selectedSite)
+                ?.allowsExtraHours
+            }
           />
         </Grid>
         <Grid item xs={12}>

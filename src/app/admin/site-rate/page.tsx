@@ -7,7 +7,11 @@ export default async function SiteRateAdminPage() {
   const sites = await api.site.getAllSites();
   const users = await api.user.getUsers();
 
-  const siteOptions = sites.map((site) => ({ id: site.id, label: site.name }));
+  const siteOptions = sites.map((site) => ({
+    id: site.id,
+    label: site.name,
+    allowsExtraHours: !!site.allowsExtraHours,
+  }));
   const userOptions = users
     .filter((user) => user.role === 'USER')
     .map((user) => ({

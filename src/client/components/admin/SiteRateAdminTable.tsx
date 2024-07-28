@@ -18,7 +18,7 @@ import SiteRateAdminForm from '~/components/admin/SiteRateAdminForm';
 type Row = SiteRateFull;
 type Props = {
   rates: SiteRateFull[];
-  sites: { id: number; label: string }[];
+  sites: { id: number; label: string; allowsExtraHours: boolean }[];
   users: { id: string; label: string }[];
 };
 
