@@ -108,13 +108,18 @@ export const siteRouter = createTRPCRouter({
         });
       }
     }),
-  getAllSites: userProcedure.query(async ({ ctx }) => {
-    return await ctx.db.site.findMany({
-      include: {
-        CreatedBy: true,
-      },
-    });
-  }),
+  getAllSites: userProcedure
+    .input(z.object({ includeCreatedBy: z.boolean() }).optional())
+    .query(async ({ input, ctx }) => {
+      if (input?.includeCreatedBy) {
+        return await ctx.db.site.findMany({
+          include: {
+            CreatedBy: true,
+          },
+        });
+      }
+      return await ctx.db.site.findMany();
+    }),
   getAllSiteRates: adminProcedure.query(async ({ ctx }) => {
     return await ctx.db.siteRate.findMany({
       include: {
