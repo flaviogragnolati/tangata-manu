@@ -98,7 +98,7 @@ export default function SiteAdminForm({ site, setOpen }: Props) {
         </Grid>
         <Grid item xs={12}>
           <SwitchElement
-            name="allowExtraHours"
+            name="allowsExtraHours"
             label="Permite horas extra (sabado, domingo y feriados)"
           />
         </Grid>
