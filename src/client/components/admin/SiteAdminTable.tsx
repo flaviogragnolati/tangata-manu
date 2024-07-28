@@ -42,6 +42,11 @@ export default function SiteAdminTable({ sites }: Props) {
       },
     },
     {
+      field: 'allowsExtraHours',
+      headerName: 'Hrs. Extra',
+      valueFormatter: (_, row) => (row.allowsExtraHours ? 'Sí' : 'No'),
+    },
+    {
       field: 'actions',
       type: 'actions',
       headerName: 'Editar',

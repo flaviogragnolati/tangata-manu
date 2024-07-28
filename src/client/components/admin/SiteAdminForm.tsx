@@ -9,6 +9,7 @@ import {
   type SubmitHandler,
   TextareaAutosizeElement,
   TextFieldElement,
+  SwitchElement,
 } from 'react-hook-form-mui';
 
 import { api } from '~/trpc/react';
@@ -93,6 +94,12 @@ export default function SiteAdminForm({ site, setOpen }: Props) {
             name="description"
             label="Descripción del sitio"
             fullWidth
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <SwitchElement
+            name="allowExtraHours"
+            label="Permite horas extra (sabado, domingo y feriados)"
           />
         </Grid>
         <Grid item xs={12}>

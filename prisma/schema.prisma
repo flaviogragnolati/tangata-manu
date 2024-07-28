@@ -76,13 +76,14 @@ enum UserRole {
 }
 
 model Site {
-    id          Int      @id @default(autoincrement())
-    name        String
-    description String?
-    location    String?
-    createdById String
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    id               Int      @id @default(autoincrement())
+    name             String
+    description      String?
+    location         String?
+    allowsExtraHours Boolean? @default(false)
+    createdById      String
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @updatedAt
 
     CreatedBy User       @relation(fields: [createdById], references: [id])
     SiteRate  SiteRate[]
