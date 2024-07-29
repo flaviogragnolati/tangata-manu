@@ -14,10 +14,12 @@ import {
 } from '@mui/material';
 import {
   useForm,
+  useWatch,
   useFieldArray,
   SelectElement,
   TextFieldElement,
   FormContainer,
+  type UseFormReturn,
 } from 'react-hook-form-mui';
 
 import { C } from '~/constants';
@@ -68,10 +70,6 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
   const siteOptions = sites.map((site) => ({
     id: site.id,
     label: site.name,
-  }));
-  const rateOptions = C.rateTypes.map((rate) => ({
-    id: rate,
-    label: C.rateTypesMap[rate],
   }));
 
   const [open, setOpen] = useState(false);
@@ -207,12 +205,10 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
                   />
                 </Grid>
                 <Grid item xs={12} md={4}>
-                  <SelectElement
-                    name={`hours.${idx}.rate`}
-                    label="Tarifa"
-                    options={rateOptions}
-                    required
-                    fullWidth
+                  <RateSelector
+                    control={methods.control}
+                    idx={idx}
+                    sites={sites}
                   />
                 </Grid>
                 <Grid item xs={12} md={4}>
@@ -279,5 +275,42 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
         />
       </BasicModal>
     </>
+  );
+}
+
+function RateSelector({
+  control,
+  idx,
+  sites,
+}: {
+  control: UseFormReturn<UserHourLogFormInput>['control'];
+  idx: number;
+  sites: SiteFull[];
+}) {
+  const generateRateOptions = (allowsExtraHours: boolean) => {
+    return C.rateTypes
+      .filter((rate) => (allowsExtraHours ? true : rate === 'normal'))
+      .map((rate) => ({
+        id: rate,
+        label: C.rateTypesMap[rate],
+      }));
+  };
+
+  const values = useWatch({
+    name: 'hours',
+    control,
+  });
+  const siteAllowsExtraHours = !!sites.find(
+    (site) => site.id === values[idx]?.site,
+  )?.allowsExtraHours;
+
+  return (
+    <SelectElement
+      name={`hours.${idx}.rate`}
+      label="Tarifa"
+      options={generateRateOptions(siteAllowsExtraHours)}
+      required
+      fullWidth
+    />
   );
 }
