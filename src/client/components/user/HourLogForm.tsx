@@ -1,5 +1,5 @@
 'use client';
-import { groupBy } from 'lodash';
+import { groupBy, keys } from 'lodash';
 import { useState } from 'react';
 import { LoadingButton } from '@mui/lab';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -33,19 +33,38 @@ type Props = {
   previousHourLogs: HourLogFull;
 };
 export default function HourLogForm({ sites, previousHourLogs }: Props) {
-  const currentMonth = dayjs().month();
-  const nextMonth = dayjs().add(1, 'month').month();
-  const previousMonth = dayjs().subtract(1, 'month').month();
-  const currentYear = dayjs().year();
-  const nextYear = dayjs().add(1, 'year').year();
-  const previousYear = dayjs().subtract(1, 'year').year();
+  const now = dayjs();
+  const currentMonth = now.month();
+  const previousMonth = now.subtract(1, 'month').month();
+  const currentYear = now.year();
+  const previousYear = now.subtract(1, 'year').year();
+  const isWithin5Days = now.date() <= 5;
+  const isJanuary = currentMonth === 0;
+  let dateOptions: Record<number, number[]> | null = null;
 
-  const [open, setOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [hoursBySite, setHoursBySite] = useState<
-    Record<number, UserHourLogFormInput['hours']>
-  >({});
+  if (isJanuary) {
+    if (isWithin5Days) {
+      dateOptions = {
+        [previousYear]: [previousMonth],
+        [currentYear]: [currentMonth],
+      };
+    } else {
+      dateOptions = {
+        [currentYear]: [currentMonth],
+      };
+    }
+  } else {
+    if (isWithin5Days) {
+      dateOptions = {
+        [currentYear]: [previousMonth, currentMonth],
+      };
+    } else {
+      dateOptions = {
+        [currentYear]: [currentMonth],
+      };
+    }
+  }
+
   const siteOptions = sites.map((site) => ({
     id: site.id,
     label: site.name,
@@ -54,6 +73,13 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
     id: rate,
     label: C.rateTypesMap[rate],
   }));
+
+  const [open, setOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [hoursBySite, setHoursBySite] = useState<
+    Record<number, UserHourLogFormInput['hours']>
+  >({});
 
   const methods = useForm<UserHourLogFormInput>({
     mode: 'onBlur',
@@ -75,6 +101,13 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
   };
 
   const handleYearSelect = (year: number) => {
+    if (isJanuary) {
+      if (year === previousYear) {
+        setSelectedMonth(previousMonth);
+      } else {
+        setSelectedMonth(currentMonth);
+      }
+    }
     setSelectedYear(year);
   };
 
@@ -83,56 +116,40 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
       <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Cargar horas
       </Typography>
-      {(currentMonth === 11 || currentMonth === 0) && (
+      {keys(dateOptions)?.length > 1 && (
         <ButtonGroup
           size="large"
           className="my-2 flex justify-center"
           color="secondary"
         >
-          {currentMonth === 0 && (
-            <Button
-              onClick={() => handleYearSelect(previousYear)}
-              variant={selectedYear === previousYear ? 'contained' : 'outlined'}
-            >
-              {previousYear}
-            </Button>
-          )}
-          <Button
-            onClick={() => handleYearSelect(currentYear)}
-            variant={selectedYear === currentYear ? 'contained' : 'outlined'}
-          >
-            {currentYear}
-          </Button>
-          {currentMonth === 11 && (
-            <Button
-              onClick={() => handleYearSelect(nextYear)}
-              variant={selectedYear === nextYear ? 'contained' : 'outlined'}
-            >
-              {nextYear}
-            </Button>
-          )}
+          {keys(dateOptions).map((_year) => {
+            const year = parseInt(_year);
+            return (
+              <Button
+                key={year}
+                onClick={() => handleYearSelect(year)}
+                variant={selectedYear === year ? 'contained' : 'outlined'}
+              >
+                {year}
+              </Button>
+            );
+          })}
         </ButtonGroup>
       )}
-      <ButtonGroup size="large" className="my-2 flex justify-center">
-        <Button
-          onClick={() => handleMonthSelect(previousMonth)}
-          variant={selectedMonth === previousMonth ? 'contained' : 'outlined'}
-        >
-          {getMonthName(previousMonth)}
-        </Button>
-        <Button
-          onClick={() => handleMonthSelect(currentMonth)}
-          variant={selectedMonth === currentMonth ? 'contained' : 'outlined'}
-        >
-          {getMonthName(currentMonth)}
-        </Button>
-        <Button
-          onClick={() => handleMonthSelect(nextMonth)}
-          variant={selectedMonth === nextMonth ? 'contained' : 'outlined'}
-        >
-          {getMonthName(nextMonth)}
-        </Button>
-      </ButtonGroup>
+      {dateOptions[selectedYear]?.length && (
+        <ButtonGroup size="large" className="my-2 flex justify-center">
+          {dateOptions[selectedYear].map((month) => (
+            <Button
+              key={month}
+              onClick={() => handleMonthSelect(month)}
+              variant={selectedMonth === month ? 'contained' : 'outlined'}
+            >
+              {getMonthName(month)}
+            </Button>
+          ))}
+        </ButtonGroup>
+      )}
+
       <PreviousHourLogDetail
         hours={previousHourLogs}
         month={selectedMonth}
