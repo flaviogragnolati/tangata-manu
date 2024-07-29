@@ -12,12 +12,12 @@ import SiteHourCard from '~/components/user/SiteHourCard';
 import { type NormalizedHourLogContent } from '~/server/lib/controller/hour.controller';
 
 const isEditable = (month: number, year: number) => {
-  const date = dayjs().year(year).month(month).date(1);
-  // Allow editing only if the month is -1 or +1 from the current month
-  return (
-    date.isSameOrAfter(dayjs().subtract(1, 'month'), 'month') &&
-    date.isSameOrBefore(dayjs().add(1, 'month'), 'month')
-  );
+  const now = dayjs();
+  const date = dayjs().year(year).month(month).date(now.date());
+
+  if (now.month() === month && now.year() === year) return true;
+  // Allow editing the previous month only if its within the first 5 days of current month
+  return now.month() - date.month() === 1 && date.date() <= 5 ? true : false;
 };
 
 type Props = {
