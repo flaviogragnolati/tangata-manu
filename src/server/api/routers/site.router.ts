@@ -113,9 +113,7 @@ export const siteRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       if (input?.includeCreatedBy) {
         return await ctx.db.site.findMany({
-          include: {
-            CreatedBy: true,
-          },
+          include: { CreatedBy: true },
         });
       }
       return await ctx.db.site.findMany();

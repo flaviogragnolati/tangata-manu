@@ -11,16 +11,18 @@ import {
 } from '@mui/x-data-grid';
 
 import { dayjs } from '~/utils/dayjs';
-import { type SiteFull } from '~/types';
+import type { SiteWithCreatedBy } from '~/types';
 import BasicModal from '~/components/ui/BasicModal';
 import SiteAdminForm from '~/components/admin/SiteAdminForm';
 
-type Row = SiteFull;
-type Props = { sites: SiteFull[] };
+type Row = SiteWithCreatedBy;
+type Props = { sites: SiteWithCreatedBy[] };
 
 export default function SiteAdminTable({ sites }: Props) {
   const [open, setOpen] = useState(false);
-  const [selectedSite, setSelectedSite] = useState<SiteFull | null>(null);
+  const [selectedSite, setSelectedSite] = useState<SiteWithCreatedBy | null>(
+    null,
+  );
 
   const columns: GridColDef<Row>[] = [
     { field: 'id', headerName: 'ID', width: 40 },
@@ -62,7 +64,7 @@ export default function SiteAdminTable({ sites }: Props) {
     },
   ];
 
-  const handleEditSite = (site: SiteFull) => {
+  const handleEditSite = (site: SiteWithCreatedBy) => {
     setSelectedSite(site);
     setOpen(true);
   };
