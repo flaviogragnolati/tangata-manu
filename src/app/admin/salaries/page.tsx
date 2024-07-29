@@ -6,11 +6,17 @@ export default async function UserSalariesPage() {
   const users = await api.user.getUsers();
   const sites = await api.site.getAllSites();
   const salaries = await api.hours.getUsersSalaries();
+  const currentRates = await api.site.getActiveSiteRates();
 
   return (
     <div className="container">
       <BackButton href="/admin" />
-      <SalariesDashboard salaries={salaries} users={users} sites={sites} />
+      <SalariesDashboard
+        salaries={salaries}
+        users={users}
+        sites={sites}
+        rates={currentRates}
+      />
     </div>
   );
 }

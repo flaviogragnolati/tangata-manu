@@ -221,7 +221,7 @@ export function normalizeUserSalaries(
 
   const groupedByUser = _.groupBy(hours, 'userId');
   const userSalaries: UserSalary[] = [];
-  const userExtraSalaries: [string, number, number, number][] = []; // [userId, year, month, extraSalary][]
+  const userExtraSalaries: [string, number, number, number][] = []; // [userId, year, month, extraSalaryHours][]
   _.forOwn(groupedByUser, (userLogs, userId) => {
     const user = userLogs?.[0]?.User;
     if (!user) {
@@ -233,7 +233,7 @@ export function normalizeUserSalaries(
       _.forOwn(groupedByMonth, (monthLogs, month) => {
         const groupedBySite = _.groupBy(monthLogs, 'siteId');
 
-        let extraSalary = 0;
+        let extraSalaryHours = 0;
         _.forOwn(groupedBySite, (siteLogs, siteId) => {
           const site = sites.find((site) => site.id === +siteId);
           if (!site) {
@@ -251,7 +251,7 @@ export function normalizeUserSalaries(
             (acc, curr) => acc + (curr?.amount ?? 0),
             0,
           );
-          extraSalary += totalAmount;
+          extraSalaryHours += totalHours;
           userSalaries.push({
             userId,
             userName: user.name,
@@ -267,7 +267,7 @@ export function normalizeUserSalaries(
           userId,
           +year,
           +month,
-          Math.ceil(extraSalary / 12),
+          Math.round((extraSalaryHours / 12) * 100) / 100,
         ]);
       });
     });

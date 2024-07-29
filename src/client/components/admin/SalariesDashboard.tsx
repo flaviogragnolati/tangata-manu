@@ -1,8 +1,8 @@
 'use client';
 
 import _ from 'lodash';
-import type { Site, User } from '@prisma/client';
 import { useEffect, useState, useMemo } from 'react';
+import type { Site, SiteRate, User } from '@prisma/client';
 import { Button, Divider, Grid, Typography } from '@mui/material';
 import {
   useForm,
@@ -19,8 +19,42 @@ import UserSalaryCard from '~/components/admin/UserSalaryCard';
 import SiteSalaryCard from '~/components/admin/SiteSalaryCard';
 import type { GroupedSalaries, UserSalariesWithExtraSalary } from '~/types';
 
+function getExtraSalaryRate(
+  userId: string,
+  rates: SiteRate[],
+  salariesByUser: UserSalariesWithExtraSalary['userSalaries'],
+) {
+  const siteHours = salariesByUser.reduce(
+    (acc, curr) => {
+      if (acc[curr.siteId]) {
+        acc[curr.siteId]! += curr.totalHours;
+      } else {
+        acc[curr.siteId] = curr.totalHours;
+      }
+      return acc;
+    },
+    {} as Record<number | string, number | undefined>,
+  );
+  // get the site with the highest hours
+  const mostFrequentSiteForUser = _.maxBy(
+    _.keys(siteHours),
+    (siteId) => siteHours[siteId],
+  );
+
+  const rate =
+    rates.find((rate) => rate.userId === userId) ?? mostFrequentSiteForUser
+      ? rates.find((rate) => rate.siteId === parseInt(mostFrequentSiteForUser!))
+      : rates.find((rate) => rate.id === parseInt(salariesByUser[0]!.siteId));
+
+  const rateValue =
+    rate?.normalRate ?? rate?.saturdayPreRate ?? rate?.saturdayPostRate ?? 0;
+
+  return rateValue;
+}
+
 function filterSalaries(
   salaries: UserSalariesWithExtraSalary,
+  rates: SiteRate[],
   _filter?: Partial<Filter>,
 ) {
   const filter = {
@@ -36,9 +70,10 @@ function filterSalaries(
   if (filter.groupBy === 'groupByUser') {
     const salariesByUser = _.groupBy(salaries.userSalaries, 'userId');
     _.forOwn(salariesByUser, (salariesByUser, userId) => {
+      if (!salariesByUser?.length) return;
       const extraSalaryAcc = salaries.userExtraSalaries.reduce(
         (acc, extraSalary) => {
-          if (filter.month < 6) {
+          if (filter.month <= 5) {
             // should sum all the extra salaries for the user from year=filter.year, and from month=0 to month=filter.month
 
             if (
@@ -55,7 +90,7 @@ function filterSalaries(
             if (
               extraSalary[0] === userId &&
               extraSalary[1] === filter.year &&
-              extraSalary[2] >= 5 &&
+              extraSalary[2] > 5 &&
               extraSalary[2] <= filter.month
             ) {
               return extraSalary[3] + acc;
@@ -65,7 +100,8 @@ function filterSalaries(
         },
         0,
       );
-      extraSalaryByUser[userId] = extraSalaryAcc;
+      extraSalaryByUser[userId] =
+        extraSalaryAcc * getExtraSalaryRate(userId, rates, salariesByUser);
 
       const filtered = salariesByUser.filter((salary) => {
         const date = dayjs().year(salary.year).month(salary.month);
@@ -127,9 +163,15 @@ type Props = {
   salaries: UserSalariesWithExtraSalary;
   users: User[];
   sites: Site[];
+  rates: SiteRate[];
 };
 
-export default function SalariesDashboard({ salaries, users, sites }: Props) {
+export default function SalariesDashboard({
+  salaries,
+  users,
+  sites,
+  rates,
+}: Props) {
   const [data, setData] = useState<GroupedSalaries>({});
   const [extraSalaries, setExtraSalaries] = useState<Record<string, number>>(
     {},
@@ -163,14 +205,14 @@ export default function SalariesDashboard({ salaries, users, sites }: Props) {
       totalAmount,
       totalHours,
       isEmpty,
-    } = filterSalaries(salaries, filter);
+    } = filterSalaries(salaries, rates, filter);
 
     setIsEmpty(isEmpty);
     setExtraSalaries(extraSalaryByUser);
     setData(filteredSalaries);
     setTotalAmount(totalAmount);
     setTotalHours(totalHours);
-  }, [filter, salaries]);
+  }, [filter, salaries, rates]);
 
   const getDataDisplay = (
     filter?: Partial<Filter>,

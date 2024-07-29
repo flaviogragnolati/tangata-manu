@@ -129,12 +129,26 @@ export const siteRouter = createTRPCRouter({
       },
     });
   }),
-  getActiveSiteRates: userProcedure.query(async ({ ctx }) => {
-    return await ctx.db.siteRate.findMany({
-      where: { active: true },
-      include: {
-        Site: true,
-      },
-    });
-  }),
+  getActiveSiteRates: userProcedure
+    .input(
+      z
+        .object({ includeSite: z.boolean().optional().default(true) })
+        .optional(),
+    )
+    .query(async ({ input, ctx }) => {
+      const includeSite =
+        typeof input?.includeSite === 'undefined' ? false : input?.includeSite;
+
+      if (includeSite) {
+        return await ctx.db.siteRate.findMany({
+          where: { active: true },
+          include: {
+            Site: true,
+          },
+        });
+      }
+      return await ctx.db.siteRate.findMany({
+        where: { active: true },
+      });
+    }),
 });
