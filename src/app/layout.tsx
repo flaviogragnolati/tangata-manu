@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`font-sans ${roboto.className}`}>
+    <html lang="es" className={`font-sans ${roboto.className}`}>
       <body>
         <TRPCReactProvider>
           <AppRouterCacheProvider options={{ enableCssLayer: true }}>
