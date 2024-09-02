@@ -17,6 +17,9 @@ export type NormalizedHourLogContent = {
   normalHours: number;
   saturdayPreHours: number;
   saturdayPostHours: number;
+  normalAmount: number;
+  saturdayPreAmount: number;
+  saturdayPostAmount: number;
 };
 
 export type NormalizedHourLog = Record<
@@ -67,12 +70,25 @@ export function normalizeHourLogs(
         if (!site || !siteLog) {
           return;
         }
+        const normalHours = siteLog.normalHours ?? 0;
+        const saturdayPreHours = siteLog.saturdayPreHours ?? 0;
+        const saturdayPostHours = siteLog.saturdayPostHours ?? 0;
+
+        const normalAmount = (siteLog.SiteRate.normalRate ?? 0) * normalHours;
+        const saturdayPreAmount =
+          (siteLog.SiteRate.saturdayPreRate ?? 0) * saturdayPreHours;
+        const saturdayPostAmount =
+          (siteLog.SiteRate.saturdayPostRate ?? 0) * saturdayPostHours;
+
         normalizedHourLog[year]![month]![siteId] = {
           userHourLogId: siteLog?.id,
           siteName: site.name,
-          normalHours: siteLog.normalHours ?? 0,
-          saturdayPreHours: siteLog.saturdayPreHours ?? 0,
-          saturdayPostHours: siteLog.saturdayPostHours ?? 0,
+          normalHours,
+          saturdayPostHours,
+          saturdayPreHours,
+          normalAmount,
+          saturdayPreAmount,
+          saturdayPostAmount,
         };
 
         //   const totalNormalHours = siteLogs.reduce(
