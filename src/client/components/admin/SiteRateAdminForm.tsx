@@ -50,9 +50,9 @@ export default function SiteRateAdminForm({
 
   const {
     mutate: createSiteRate,
-    isError,
-    isPending,
-    error,
+    isPending: isCreatePending,
+    isError: isCreateError,
+    error: createError,
   } = api.site.createSiteRate.useMutation({
     onSuccess: () => {
       showToast('success', 'Valor de hora de sitio añadido correctamente');
@@ -65,12 +65,29 @@ export default function SiteRateAdminForm({
     },
   });
 
+  const {
+    mutate: editSiteRate,
+    isPending: isEditPending,
+    isError: isEditError,
+    error: editError,
+  } = api.site.editSiteRate.useMutation({
+    onSuccess: () => {
+      showToast('success', 'Valor de hora de sitio actualizado correctamente');
+      methods.reset();
+      setOpen(false);
+      router.refresh();
+    },
+    onError: (error) => {
+      showToast('error', error.message);
+    },
+  });
+
   const onSubmitHandler: SubmitHandler<SiteRate> = (values) => {
-    createSiteRate(values);
+    isEdit ? editSiteRate({ id: rate.id, ...values }) : createSiteRate(values);
   };
 
-  if (isError) {
-    showToast('error', error.message);
+  if (isCreateError || isEditError) {
+    showToast('error', createError?.message ?? editError?.message);
   }
 
   return (
@@ -160,8 +177,8 @@ export default function SiteRateAdminForm({
         <Divider />
         <Grid item xs={12}>
           <LoadingButton
-            loading={isPending}
-            disabled={isPending || !isValid}
+            loading={isCreatePending || isEditPending}
+            disabled={!isValid || isCreatePending || isEditPending}
             variant="contained"
             color="success"
             type="submit"

@@ -44,6 +44,58 @@ export const siteRouter = createTRPCRouter({
         }
       }
     }),
+  editSiteRate: adminProcedure
+    .input(siteRateSchema.extend({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const data = {
+        ...input,
+        createdById: ctx.user.id,
+      };
+
+      // 1. update the site rate
+      try {
+        const siteRate = await ctx.db.siteRate.update({
+          where: { id: data.id },
+          data,
+        });
+        const normalRate = siteRate.normalRate ?? 0;
+        const saturdayPreRate = siteRate.saturdayPreRate ?? 0;
+        const saturdayPostRate = siteRate.saturdayPostRate ?? 0;
+
+        // 2. trigger a recalculation of the user's salary
+        // 2.1 Get all the UserHourLogs for the rate being updated
+        const userHourLogs = await ctx.db.userHourLog.findMany({
+          where: { siteRateId: data.id },
+        });
+
+        // 2.2 For each UserHourLog, recalculate the salary
+        await Promise.all(
+          userHourLogs.map(async (userHourLog) => {
+            const normalHours = userHourLog.normalHours ?? 0;
+            const saturdayPreHours = userHourLog.saturdayPreHours ?? 0;
+            const saturdayPostHours = userHourLog.saturdayPostHours ?? 0;
+            const amount =
+              normalHours * normalRate +
+              saturdayPreHours * saturdayPreRate +
+              saturdayPostHours * saturdayPostRate;
+
+            await ctx.db.userHourLog.update({
+              where: { id: userHourLog.id },
+              data: { amount },
+            });
+          }),
+        );
+
+        return siteRate;
+      } catch (err) {
+        const error = err as Error;
+        console.error(`Error updating site rate: ${error.message}`);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error updating site rate',
+        });
+      }
+    }),
   createSiteRate: adminProcedure
     .input(siteRateSchema)
     .mutation(async ({ input, ctx }) => {
