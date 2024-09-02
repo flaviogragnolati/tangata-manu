@@ -17,11 +17,13 @@ import {
   TableRow,
 } from '@mui/material';
 
+import C from '~/constants';
+import { UserSalary } from '~/types';
 import { ARSformatter } from '~/utils/helpers';
 
 type Props = {
   user: User;
-  salary: { siteName: string; totalHours: number; totalAmount: number }[];
+  salary: UserSalary[];
   extraSalary?: number;
 };
 export default function UserSalaryCard({ user, salary, extraSalary }: Props) {
@@ -50,6 +52,9 @@ export default function UserSalaryCard({ user, salary, extraSalary }: Props) {
                   <strong>Sitio</strong>
                 </TableCell>
                 <TableCell align="center">
+                  <strong>Tarifa</strong>
+                </TableCell>
+                <TableCell align="center">
                   <strong>Horas</strong>
                 </TableCell>
                 <TableCell align="center">
@@ -59,20 +64,32 @@ export default function UserSalaryCard({ user, salary, extraSalary }: Props) {
             </TableHead>
             <TableBody>
               {salary.map((row, idx) => {
-                const isEven = idx % 2 === 0;
-                return (
-                  <TableRow
-                    key={row.siteName}
-                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                    style={{ backgroundColor: isEven ? '#f9f9f9' : 'white' }}
-                  >
-                    <TableCell align="center">{row.siteName}</TableCell>
-                    <TableCell align="center">{row.totalHours}</TableCell>
-                    <TableCell align="center">
-                      {ARSformatter.format(row.totalAmount)}
-                    </TableCell>
-                  </TableRow>
-                );
+                return C.rateTypes.map((rateType, idx) => {
+                  const isEven = idx % 2 === 0;
+                  const rateLabel = C.rateTypesMap[rateType];
+                  const amount = row[`${rateType}Amount` as const];
+                  const hours = row[`${rateType}Hours` as const];
+                  if (!amount || !hours) return null;
+
+                  return (
+                    <TableRow
+                      key={`${row.siteName}-${rateType}`}
+                      sx={{
+                        '&:last-child td, &:last-child th': { border: 0 },
+                      }}
+                      style={{
+                        backgroundColor: isEven ? '#f9f9f9' : 'white',
+                      }}
+                    >
+                      <TableCell align="center">{row.siteName}</TableCell>
+                      <TableCell align="center">{rateLabel}</TableCell>
+                      <TableCell align="center">{hours}</TableCell>
+                      <TableCell align="center">
+                        {ARSformatter.format(amount)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                });
               })}
             </TableBody>
           </Table>

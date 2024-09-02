@@ -214,7 +214,13 @@ export type UserSalary = {
   siteName: string;
   year: number;
   month: number;
+  normalHours: number;
+  saturdayPreHours: number;
+  saturdayPostHours: number;
   totalHours: number;
+  normalAmount: number;
+  saturdayPreAmount: number;
+  saturdayPostAmount: number;
   totalAmount: number;
 };
 
@@ -255,18 +261,30 @@ export function normalizeUserSalaries(
           if (!site) {
             return;
           }
-          const totalHours = siteLogs.reduce(
-            (acc, curr) =>
-              acc +
-              (curr?.normalHours ?? 0) +
-              (curr?.saturdayPreHours ?? 0) +
-              (curr?.saturdayPostHours ?? 0),
+          const normalHours = siteLogs.reduce(
+            (acc, curr) => acc + (curr?.normalHours ?? 0),
             0,
           );
-          const totalAmount = siteLogs.reduce(
-            (acc, curr) => acc + (curr?.amount ?? 0),
+          const saturdayPreHours = siteLogs.reduce(
+            (acc, curr) => acc + (curr?.saturdayPreHours ?? 0),
             0,
           );
+          const saturdayPostHours = siteLogs.reduce(
+            (acc, curr) => acc + (curr?.saturdayPostHours ?? 0),
+            0,
+          );
+          const totalHours = normalHours + saturdayPreHours + saturdayPostHours;
+
+          const normalRate = siteLogs[0]?.SiteRate.normalRate ?? 0;
+          const saturdayPreRate = siteLogs[0]?.SiteRate.saturdayPreRate ?? 0;
+          const saturdayPostRate = siteLogs[0]?.SiteRate.saturdayPostRate ?? 0;
+
+          const normalAmount = normalRate * normalHours;
+          const saturdayPreAmount = saturdayPreRate * saturdayPreHours;
+          const saturdayPostAmount = saturdayPostRate * saturdayPostHours;
+          const totalAmount =
+            normalAmount + saturdayPreAmount + saturdayPostAmount;
+
           extraSalaryHours += totalHours;
           userSalaries.push({
             userId,
@@ -276,7 +294,13 @@ export function normalizeUserSalaries(
             year: +year,
             month: +month,
             totalHours,
+            normalHours,
+            saturdayPreHours,
+            saturdayPostHours,
             totalAmount,
+            normalAmount,
+            saturdayPreAmount,
+            saturdayPostAmount,
           });
         });
         userExtraSalaries.push([

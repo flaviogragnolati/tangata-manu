@@ -283,11 +283,7 @@ export default function SalariesDashboard({
           alignItems="center"
           alignSelf="center"
           textAlign="center"
-          // justifyItems="center"
-          // justifySelf="center"
-          // justifyContent="center"
           direction="column"
-          // alignContent="center"
         >
           <Grid item xs={12}>
             <ToggleButtonGroupElement
