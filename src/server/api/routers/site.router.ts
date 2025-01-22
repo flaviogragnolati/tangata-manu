@@ -48,8 +48,9 @@ export const siteRouter = createTRPCRouter({
   editSiteRate: adminProcedure
     .input(siteRateSchema.extend({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
+      const { siteId, ...inputData } = input;
       const data = {
-        ...input,
+        ...inputData,
         createdById: ctx.user.id,
       };
 

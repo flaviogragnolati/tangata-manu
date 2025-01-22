@@ -173,20 +173,23 @@ export default function SiteRateAdminForm({
             }}
           />
         </Grid>
-        <Grid size={{ xs: 12 }}>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePickerElement
-              name="retroactiveFrom"
-              label="Hacer retroactivo desde"
-              className="w-full"
-              disableFuture={true}
-              helperText="Elegir una fecha si se desea actualizar las horas cargadas de forma retroactiva"
-              transform={{
-                output: (value) => (value ? dayjs(value).toISOString() : null),
-              }}
-            />
-          </LocalizationProvider>
-        </Grid>
+        {!isEdit && (
+          <Grid size={{ xs: 12 }}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePickerElement
+                name="retroactiveFrom"
+                label="Hacer retroactivo desde"
+                className="w-full"
+                disableFuture={true}
+                helperText="Elegir una fecha si se desea actualizar las horas cargadas de forma retroactiva"
+                transform={{
+                  output: (value) =>
+                    value ? dayjs(value).toISOString() : null,
+                }}
+              />
+            </LocalizationProvider>
+          </Grid>
+        )}
         {isEdit && (
           <Grid size={{ xs: 12 }}>
             <SwitchElement name="active" label="Activo" />
