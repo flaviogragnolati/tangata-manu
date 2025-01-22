@@ -3,7 +3,7 @@
 import _ from 'lodash';
 import { useEffect, useState, useMemo } from 'react';
 import type { Site, SiteRate, User } from '@prisma/client';
-import { Button, Divider, Grid, Typography } from '@mui/material';
+import { Button, Divider, Grid2 as Grid, Typography } from '@mui/material';
 import {
   useForm,
   useWatch,
@@ -276,16 +276,14 @@ export default function SalariesDashboard({
       >
         <Grid
           container
-          xs={12}
-          sm={10}
-          md={8}
-          gap={2}
+          rowSpacing={2}
+          size={{ xs: 12, sm: 10, md: 8 }}
           alignItems="center"
           alignSelf="center"
           textAlign="center"
           direction="column"
         >
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <ToggleButtonGroupElement
               name="groupBy"
               label="Agrupar datos por:"
@@ -298,7 +296,7 @@ export default function SalariesDashboard({
               ]}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Button
               color="primary"
               variant="contained"
@@ -314,8 +312,8 @@ export default function SalariesDashboard({
               HOY
             </Button>
           </Grid>
-          <Grid item container xs={12} direction="row" spacing={1}>
-            <Grid item xs={6}>
+          <Grid container size={{ xs: 12 }} direction="row" spacing={1}>
+            <Grid size={{ xs: 6 }}>
               <SelectElement
                 label="Año"
                 name="year"
@@ -323,7 +321,7 @@ export default function SalariesDashboard({
                 fullWidth
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid size={{ xs: 6 }}>
               <SelectElement
                 label="Mes"
                 name="month"
@@ -366,7 +364,7 @@ function SalaryByUser({
         const filteredSalaries = data[userId];
         if (!user || !filteredSalaries) return null;
         return (
-          <Grid item key={userId} xs={12} sm={6} md={4}>
+          <Grid key={userId} size={{ xs: 12, sm: 6, md: 4 }}>
             <UserSalaryCard
               user={user}
               salary={filteredSalaries}
@@ -397,7 +395,7 @@ function SalaryBySite({
         const filteredSalaries = data[siteId];
         if (!site || !filteredSalaries) return null;
         return (
-          <Grid item key={siteId} xs={12} sm={6} md={4}>
+          <Grid key={siteId} size={{ xs: 12, sm: 6, md: 4 }}>
             <SiteSalaryCard site={site} salary={filteredSalaries} />
           </Grid>
         );
@@ -415,20 +413,18 @@ function TotalsComponent({
 }) {
   return (
     <Grid
-      item
-      container
-      xs={12}
+      size={{ xs: 12 }}
       direction="column"
       alignContent="end"
       alignItems="end"
       alignSelf="center"
     >
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Typography variant="h5" gutterBottom>
           Total de horas: {totalHours}
         </Typography>
       </Grid>
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Typography variant="h5" gutterBottom>
           Total Monto: {ARSformatter.format(totalAmount)}
         </Typography>

@@ -3,7 +3,13 @@
 import { LoadingButton } from '@mui/lab';
 import { useRouter } from 'next/navigation';
 import { type UseFormReturn } from 'react-hook-form';
-import { Button, Divider, Grid, Stack, Typography } from '@mui/material';
+import {
+  Button,
+  Divider,
+  Grid2 as Grid,
+  Stack,
+  Typography,
+} from '@mui/material';
 
 import { C } from '~/constants';
 import { api } from '~/trpc/react';
@@ -61,9 +67,7 @@ export default function HourLogConfirmation({
 
   return (
     <Grid
-      container
-      xs={12}
-      md={4}
+      size={{ xs: 12, md: 4 }}
       gap={2}
       alignItems="center"
       textAlign="center"
@@ -75,14 +79,14 @@ export default function HourLogConfirmation({
           0,
         );
         return (
-          <Grid container item key={siteId} xs={12} md={4} spacing={1}>
-            <Grid item xs={12}>
+          <Grid size={{ xs: 12, md: 4 }} key={siteId} spacing={1}>
+            <Grid size={{ xs: 12 }}>
               <Typography variant="h4" gutterBottom>
                 {siteName}
               </Typography>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               {C.rateTypes.map((rate, idx) => {
                 const rateHours = hours[rate];
                 if (!rateHours) return null;
@@ -94,7 +98,7 @@ export default function HourLogConfirmation({
               })}
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Typography
                 variant="h6"
                 fontWeight={'fontWeightBold'}
@@ -107,7 +111,7 @@ export default function HourLogConfirmation({
         );
       })}
       <Divider flexItem sx={{ mr: '-1px' }} />
-      <Grid item>
+      <Grid size={{ xs: 12 }}>
         <Typography variant="h5" className="self-center">
           Total a cargar para {dayjs().month(month).format('MMMM')} de {year}:{' '}
           <strong>
@@ -118,7 +122,7 @@ export default function HourLogConfirmation({
           </strong>
         </Typography>
       </Grid>
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
         <Stack direction="row" gap={2} className="self-center">
           <Button
             variant="outlined"

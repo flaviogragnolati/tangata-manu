@@ -8,7 +8,7 @@ import {
   Button,
   ButtonGroup,
   Divider,
-  Grid,
+  Grid2 as Grid,
   IconButton,
   Typography,
 } from '@mui/material';
@@ -171,8 +171,7 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
         </Divider>
         <Grid
           container
-          xs={12}
-          md={10}
+          size={{ xs: 12, md: 10 }}
           gap={2}
           alignItems="center"
           alignSelf="center"
@@ -182,20 +181,19 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
           {fields.map((field, idx) => {
             return (
               <Grid
-                item
-                container
                 key={field.id}
-                xs={12}
+                container
+                size={{ xs: 12 }}
                 spacing={1}
                 alignItems="center"
                 alignSelf="center"
                 textAlign="center"
                 direction="row"
               >
-                <Grid item>
+                <Grid>
                   <Typography variant="h6">{idx + 1}</Typography>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <SelectElement
                     name={`hours.${idx}.site`}
                     label="Sitio"
@@ -204,14 +202,14 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <RateSelector
                     control={methods.control}
                     idx={idx}
                     sites={sites}
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <TextFieldElement
                     name={`hours.${idx}.hours`}
                     label="Cantidad"
@@ -220,7 +218,7 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item>
+                <Grid>
                   <IconButton onClick={() => remove(idx)} color="error">
                     <DeleteIcon />
                   </IconButton>
@@ -228,7 +226,7 @@ export default function HourLogForm({ sites, previousHourLogs }: Props) {
               </Grid>
             );
           })}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <IconButton
               onClick={() =>
                 append({

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 
 import { siteSchema, siteRateSchema } from '~/schemas';
+import type { SiteRate, UserHourLog } from '@prisma/client';
 import {
   adminProcedure,
   createTRPCRouter,
@@ -81,7 +82,7 @@ export const siteRouter = createTRPCRouter({
 
             await ctx.db.userHourLog.update({
               where: { id: userHourLog.id },
-              data: { amount },
+              data: { amount, edited: true },
             });
           }),
         );
@@ -99,6 +100,8 @@ export const siteRouter = createTRPCRouter({
   createSiteRate: adminProcedure
     .input(siteRateSchema)
     .mutation(async ({ input, ctx }) => {
+      const { retroactiveFrom, ...inputData } = input;
+
       // 1. Check if there is another `active` SiteRate for the same site & userId combination
       const activeSiteRate = input.userId
         ? await ctx.db.siteRate.findFirst({
@@ -116,10 +119,11 @@ export const siteRouter = createTRPCRouter({
           });
 
       const data = {
-        ...input,
+        ...inputData,
         createdById: ctx.user.id,
       };
 
+      let siteRate: SiteRate | null;
       try {
         if (activeSiteRate) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -133,9 +137,9 @@ export const siteRouter = createTRPCRouter({
             }),
             ctx.db.siteRate.create({ data }),
           ]);
-          return newSiteRate;
+          siteRate = newSiteRate;
         } else {
-          return await ctx.db.siteRate.create({ data });
+          siteRate = await ctx.db.siteRate.create({ data });
         }
       } catch (err) {
         const error = err as Error;
@@ -144,6 +148,55 @@ export const siteRouter = createTRPCRouter({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Error creating site rate',
         });
+      }
+
+      if (retroactiveFrom) {
+        // we need to retroactively update the UserHourLogs
+        // we need to find all the UserHourLogs that are affected by the new rate
+        let userHourLogs: UserHourLog[] = [];
+        if (siteRate.userId) {
+          // if the siteRate targets a specific user
+          userHourLogs = await ctx.db.userHourLog.findMany({
+            where: {
+              SiteRate: { siteId: siteRate.siteId },
+              userId: siteRate.userId,
+              createdAt: { gte: retroactiveFrom },
+            },
+          });
+        } else {
+          userHourLogs = await ctx.db.userHourLog.findMany({
+            where: {
+              SiteRate: { siteId: siteRate.siteId },
+              createdAt: { gte: retroactiveFrom },
+            },
+          });
+        }
+        // for each UserHourLog, recalculate the amount with the new rate
+        const updatedUserHourLogs = await Promise.all(
+          userHourLogs.map(async (userHourLog) => {
+            const normalHours = userHourLog.normalHours ?? 0;
+            const saturdayPreHours = userHourLog.saturdayPreHours ?? 0;
+            const saturdayPostHours = userHourLog.saturdayPostHours ?? 0;
+            const amount =
+              normalHours * (siteRate.normalRate ?? 0) +
+              saturdayPreHours * (siteRate.saturdayPreRate ?? 0) +
+              saturdayPostHours * (siteRate.saturdayPostRate ?? 0);
+
+            return await ctx.db.userHourLog.update({
+              where: { id: userHourLog.id },
+              data: {
+                siteRateId: siteRate.id,
+                amount,
+                retroactiveUpdate: true,
+              },
+            });
+          }),
+        );
+
+        return {
+          siteRate,
+          updatedUserHourLogs,
+        };
       }
     }),
   deleteSiteRate: adminProcedure

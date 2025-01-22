@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 
 import C from '~/constants';
-import { UserSalary } from '~/types';
+import { type UserSalary } from '~/types';
 import { ARSformatter } from '~/utils/helpers';
 
 type Props = {

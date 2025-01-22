@@ -1,6 +1,6 @@
 'use client';
 
-import { Grid } from '@mui/material';
+import { Grid2 as Grid } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -73,12 +73,12 @@ export default function SiteAdminForm({ site, setOpen }: Props) {
       <Grid
         container
         spacing={2}
-        xs={11}
-        md={8}
+        size={{ xs: 11, md: 8 }}
         alignSelf="center"
         textAlign="center"
+        marginX={{ xs: '1rem' }}
       >
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextFieldElement
             fullWidth
             name="name"
@@ -86,23 +86,23 @@ export default function SiteAdminForm({ site, setOpen }: Props) {
             required
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextFieldElement name="location" label="Ubicación" fullWidth />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextareaAutosizeElement
             name="description"
             label="Descripción del sitio"
             fullWidth
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <SwitchElement
             name="allowsExtraHours"
             label="Permite horas extra (sabado, domingo y feriados)"
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <LoadingButton
             loading={isPending}
             disabled={isPending || !isValid}

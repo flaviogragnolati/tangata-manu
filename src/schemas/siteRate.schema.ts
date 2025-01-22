@@ -7,6 +7,7 @@ export const siteRateSchema = z.object({
   saturdayPostRate: z.number().min(0).nullish().default(0),
   userId: z.string().nullish(),
   active: z.boolean().default(true),
+  retroactiveFrom: z.string().nullish().default(null),
 });
 
 export type SiteRate = z.infer<typeof siteRateSchema>;

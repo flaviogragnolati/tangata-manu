@@ -1,6 +1,6 @@
 'use client';
 
-import { Grid } from '@mui/material';
+import { Grid2 as Grid } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { useRouter } from 'next/navigation';
 import { FormContainer, TextFieldElement, useForm } from 'react-hook-form-mui';
@@ -58,8 +58,8 @@ export default function EditHourLog({ hourLog, setOpen }: Props) {
         className: 'flex flex-col',
       }}
     >
-      <Grid container xs={12} spacing={2} alignSelf="center" textAlign="center">
-        <Grid item xs={12}>
+      <Grid size={{ xs: 12 }} spacing={2} alignSelf="center" textAlign="center">
+        <Grid size={{ xs: 12 }}>
           <TextFieldElement
             name="normalHours"
             label="Horas normales"
@@ -68,7 +68,7 @@ export default function EditHourLog({ hourLog, setOpen }: Props) {
             fullWidth
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextFieldElement
             name="saturdayPreHours"
             label="Horas sábado previo 14:00"
@@ -77,7 +77,7 @@ export default function EditHourLog({ hourLog, setOpen }: Props) {
             fullWidth
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextFieldElement
             name="saturdayPostHours"
             label="Horas sábado pasadas 14:00"
@@ -86,7 +86,7 @@ export default function EditHourLog({ hourLog, setOpen }: Props) {
             fullWidth
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <LoadingButton
             disabled={!isValid || isPending}
             variant="contained"

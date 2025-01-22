@@ -3,7 +3,10 @@
 import { LoadingButton } from '@mui/lab';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Divider, Grid, Typography } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { Divider, Grid2 as Grid, Typography } from '@mui/material';
+import { DatePickerElement } from 'react-hook-form-mui/date-pickers';
 import {
   useForm,
   type SubmitHandler,
@@ -14,6 +17,7 @@ import {
 } from 'react-hook-form-mui';
 
 import { api } from '~/trpc/react';
+import { dayjs } from '~/utils/dayjs';
 import { type SiteRateFull } from '~/types';
 import { showToast } from '~/client-utils/toast';
 import { siteRateSchema, type SiteRate } from '~/schemas';
@@ -100,18 +104,18 @@ export default function SiteRateAdminForm({
     >
       <Grid
         container
-        xs={11}
-        md={8}
+        size={{ xs: 12, md: 8 }}
         spacing={2}
         alignSelf="center"
         textAlign="center"
+        marginX={{ xs: '1rem' }}
       >
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
             {isEdit ? 'Editar' : 'Crear'} tarifa
           </Typography>
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <SelectElement
             name="siteId"
             label="Sitio"
@@ -120,7 +124,7 @@ export default function SiteRateAdminForm({
             fullWidth
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextFieldElement
             name="normalRate"
             label="Valor de hora normal (Lunes a Viernes)"
@@ -129,7 +133,7 @@ export default function SiteRateAdminForm({
             fullWidth
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextFieldElement
             name="saturdayPreRate"
             label="Valor de hora sábado hasta las 14:30"
@@ -141,7 +145,7 @@ export default function SiteRateAdminForm({
             }
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <TextFieldElement
             name="saturdayPostRate"
             label="Valor de hora sábado después de las 14:30"
@@ -153,7 +157,7 @@ export default function SiteRateAdminForm({
             }
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <AutocompleteElement
             name="userId"
             label="Usuario"
@@ -169,13 +173,27 @@ export default function SiteRateAdminForm({
             }}
           />
         </Grid>
+        <Grid size={{ xs: 12 }}>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePickerElement
+              name="retroactiveFrom"
+              label="Hacer retroactivo desde"
+              className="w-full"
+              disableFuture={true}
+              helperText="Elegir una fecha si se desea actualizar las horas cargadas de forma retroactiva"
+              transform={{
+                output: (value) => (value ? dayjs(value).toISOString() : null),
+              }}
+            />
+          </LocalizationProvider>
+        </Grid>
         {isEdit && (
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <SwitchElement name="active" label="Activo" />
           </Grid>
         )}
         <Divider />
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <LoadingButton
             loading={isCreatePending || isEditPending}
             disabled={!isValid || isCreatePending || isEditPending}

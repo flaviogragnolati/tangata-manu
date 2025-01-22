@@ -1,6 +1,6 @@
 import { keys } from 'lodash';
 import { useState } from 'react';
-import { Grid, Typography } from '@mui/material';
+import { Grid2 as Grid, Typography } from '@mui/material';
 
 import type { HourLogFull } from '~/types';
 import BasicModal from '~/components/ui/BasicModal';
@@ -40,8 +40,8 @@ export default function PreviousHourLogDetail({ hours, year, month }: Props) {
 
   return (
     <>
-      <Grid container xs={12}>
-        <Grid item xs={12}>
+      <Grid size={{ xs: 12 }}>
+        <Grid size={{ xs: 12 }}>
           <Typography variant="h6" gutterBottom>
             Horas cargadas previamente
           </Typography>
@@ -50,7 +50,7 @@ export default function PreviousHourLogDetail({ hours, year, month }: Props) {
           const siteLog = hoursBySite[siteId];
           if (!siteLog) return null;
           return (
-            <Grid item key={siteId} xs={12} sm={6} md={4}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={siteId}>
               <SiteHourCard
                 siteLog={siteLog}
                 editable={true}
@@ -63,7 +63,7 @@ export default function PreviousHourLogDetail({ hours, year, month }: Props) {
             </Grid>
           );
         })}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Typography variant="h6" className="mt-2 text-end">
             Total de horas: {totalHours}
           </Typography>
