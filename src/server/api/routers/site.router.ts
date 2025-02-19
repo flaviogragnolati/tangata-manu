@@ -48,17 +48,13 @@ export const siteRouter = createTRPCRouter({
   editSiteRate: adminProcedure
     .input(siteRateSchema.extend({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const { siteId, ...inputData } = input;
-      const data = {
-        ...inputData,
-        createdById: ctx.user.id,
-      };
-
+      const { retroactiveFrom, ...siteRateData } = input;
       // 1. update the site rate
       try {
+        // merge the new data with the existing data
         const siteRate = await ctx.db.siteRate.update({
-          where: { id: data.id },
-          data,
+          where: { id: input.id },
+          data: siteRateData,
         });
         const normalRate = siteRate.normalRate ?? 0;
         const saturdayPreRate = siteRate.saturdayPreRate ?? 0;
@@ -67,10 +63,12 @@ export const siteRouter = createTRPCRouter({
         // 2. trigger a recalculation of the user's salary
         // 2.1 Get all the UserHourLogs for the rate being updated
         const userHourLogs = await ctx.db.userHourLog.findMany({
-          where: { siteRateId: data.id },
+          where: { siteRateId: input.id },
         });
 
         // 2.2 For each UserHourLog, recalculate the salary
+        // TODO: if the `userId` is removed from the siteRate,
+        // we need to recalculate the salary for all the UserHourLogs associated with the `siteId`
         await Promise.all(
           userHourLogs.map(async (userHourLog) => {
             const normalHours = userHourLog.normalHours ?? 0;

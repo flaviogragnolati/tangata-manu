@@ -41,7 +41,13 @@ export default function SiteRateAdminForm({
   const defaultValues = (rate ?? { active: true }) as SiteRate;
   const methods = useForm<SiteRate>({
     mode: 'onBlur',
-    resolver: zodResolver(siteRateSchema),
+    resolver: zodResolver(
+      isEdit
+        ? siteRateSchema.extend({
+            siteId: siteRateSchema.shape.siteId.nullish(),
+          })
+        : siteRateSchema,
+    ),
     defaultValues,
   });
 
@@ -87,7 +93,9 @@ export default function SiteRateAdminForm({
   });
 
   const onSubmitHandler: SubmitHandler<SiteRate> = (values) => {
-    isEdit ? editSiteRate({ id: rate.id, ...values }) : createSiteRate(values);
+    isEdit
+      ? editSiteRate({ id: rate.id, ...values, siteId: rate.siteId })
+      : createSiteRate(values);
   };
 
   if (isCreateError || isEditError) {
@@ -122,6 +130,7 @@ export default function SiteRateAdminForm({
             options={siteOptions}
             required
             fullWidth
+            disabled={isEdit}
           />
         </Grid>
         <Grid size={{ xs: 12 }}>
