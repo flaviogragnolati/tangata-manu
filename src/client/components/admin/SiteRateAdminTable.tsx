@@ -109,21 +109,15 @@ export default function SiteRateAdminTable({ rates, sites, users }: Props) {
       <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Administrador de tarifas
       </Typography>
-      <Box
-        sx={{
-          height: 'calc(100vh - 200px)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ flexGrow: 1 }}>
           <DataGrid
             rows={rates}
             columns={columns}
-            autoHeight
             filterMode="client"
             sortingMode="client"
             getRowId={(row) => row.id}
+            pageSizeOptions={[5, 10, 25, 50, 100]}
             initialState={{
               pagination: {
                 paginationModel: {
