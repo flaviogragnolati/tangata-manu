@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
-import { Button, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
@@ -109,56 +109,64 @@ export default function SiteRateAdminTable({ rates, sites, users }: Props) {
       <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
         Administrador de tarifas
       </Typography>
-      <div style={{ height: 400, width: '100%' }}>
-        <DataGrid
-          rows={rates}
-          columns={columns}
-          autoHeight
-          filterMode="client"
-          sortingMode="client"
-          getRowId={(row) => row.id}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 10,
+      <Box
+        sx={{
+          height: 'calc(100vh - 200px)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={rates}
+            columns={columns}
+            autoHeight
+            filterMode="client"
+            sortingMode="client"
+            getRowId={(row) => row.id}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  pageSize: 10,
+                },
               },
-            },
-            filter: {
-              filterModel: {
-                items: [
-                  {
-                    field: 'active',
-                    operator: 'equals',
-                    value: 'Si',
-                  },
-                ],
+              filter: {
+                filterModel: {
+                  items: [
+                    {
+                      field: 'active',
+                      operator: 'equals',
+                      value: 'Si',
+                    },
+                  ],
+                },
               },
-            },
-          }}
-          slots={{
-            toolbar: GridToolbar,
-          }}
-          slotProps={{
-            toolbar: {
-              showQuickFilter: true,
-              quickFilterProps: { debounceMs: 500 },
-            },
-          }}
-          getRowClassName={(params) =>
-            params.indexRelativeToCurrentPage % 2 === 0 ? 'bg-gray-100' : ''
-          }
-        />
-      </div>
-      <div className="container flex flex-col items-center justify-center">
-        <Button
-          onClick={handleCreateNewRate}
-          variant="contained"
-          color="primary"
-          size="large"
-        >
-          Cargar nueva tarifa
-        </Button>
-      </div>
+            }}
+            slots={{
+              toolbar: GridToolbar,
+            }}
+            slotProps={{
+              toolbar: {
+                showQuickFilter: true,
+                quickFilterProps: { debounceMs: 500 },
+              },
+            }}
+            getRowClassName={(params) =>
+              params.indexRelativeToCurrentPage % 2 === 0 ? 'bg-gray-100' : ''
+            }
+          />
+        </div>
+        <div className="container mt-2 flex flex-col items-center justify-center">
+          <Button
+            onClick={handleCreateNewRate}
+            variant="contained"
+            color="primary"
+            size="large"
+          >
+            Cargar nueva tarifa
+          </Button>
+        </div>
+      </Box>
       <BasicModal
         title={selectedRate ? 'Editar Tarifa' : 'Crear Tarifa'}
         dialogProps={{
