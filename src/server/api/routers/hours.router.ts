@@ -227,7 +227,9 @@ export const hoursRouter = createTRPCRouter({
               siteRate.siteId === parseInt(siteId) &&
               siteRate.userId === ctx.user.id,
           ) ??
-          siteRates.find((siteRate) => siteRate.siteId === parseInt(siteId));
+          siteRates
+            .filter((siteRate) => !siteRate.userId)
+            .find((siteRate) => siteRate.siteId === parseInt(siteId));
 
         if (!siteRate) {
           throw new TRPCError({
