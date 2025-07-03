@@ -64,44 +64,47 @@ function filterSalaries(
   };
 
   const filteredSalaries: GroupedSalaries = {};
-  const extraSalaryByUser: Record<string, number> = {};
+  // const extraSalaryByUser: Record<string, number> = {};
+  // const extraSalaryBySite: Record<string, number> = {};
+  const extraSalaryByUserAndSite: Record<string, Record<string, number>> = {};
+  const extraSalaryBySiteAndUser: Record<string, Record<string, number>> = {};
   let totalAmount = 0;
   let totalHours = 0;
   if (filter.groupBy === 'groupByUser') {
     const salariesByUser = _.groupBy(salaries.userSalaries, 'userId');
     _.forOwn(salariesByUser, (salariesByUser, userId) => {
       if (!salariesByUser?.length) return;
-      const extraSalaryAcc = salaries.userExtraSalaries.reduce(
-        (acc, extraSalary) => {
-          if (filter.month <= 5) {
-            // should sum all the extra salaries for the user from year=filter.year, and from month=0 to month=filter.month
+      // const extraSalaryAcc = salaries.userExtraSalaries.reduce(
+      //   (acc, extraSalary) => {
+      //     if (filter.month <= 5) {
+      //       // should sum all the extra salaries for the user from year=filter.year, and from month=0 to month=filter.month
 
-            if (
-              extraSalary[0] === userId &&
-              extraSalary[1] === filter.year &&
-              extraSalary[2] >= 0 &&
-              extraSalary[2] <= filter.month
-            ) {
-              return extraSalary[3] + acc;
-            }
-          } else if (filter.month > 5) {
-            // should sum all the extra salaries for the user from year=filter.year, and from month=5 to month=11
+      //       if (
+      //         extraSalary[0] === userId &&
+      //         extraSalary[1] === filter.year &&
+      //         extraSalary[2] >= 0 &&
+      //         extraSalary[2] <= filter.month
+      //       ) {
+      //         return extraSalary[3] + acc;
+      //       }
+      //     } else if (filter.month > 5) {
+      //       // should sum all the extra salaries for the user from year=filter.year, and from month=5 to month=11
 
-            if (
-              extraSalary[0] === userId &&
-              extraSalary[1] === filter.year &&
-              extraSalary[2] > 5 &&
-              extraSalary[2] <= filter.month
-            ) {
-              return extraSalary[3] + acc;
-            }
-          }
-          return acc;
-        },
-        0,
-      );
-      extraSalaryByUser[userId] =
-        extraSalaryAcc * getExtraSalaryRate(userId, rates, salariesByUser);
+      //       if (
+      //         extraSalary[0] === userId &&
+      //         extraSalary[1] === filter.year &&
+      //         extraSalary[2] > 5 &&
+      //         extraSalary[2] <= filter.month
+      //       ) {
+      //         return extraSalary[3] + acc;
+      //       }
+      //     }
+      //     return acc;
+      //   },
+      //   0,
+      // );
+      // extraSalaryByUser[userId] =
+      //   extraSalaryAcc * getExtraSalaryRate(userId, rates, salariesByUser);
 
       const filtered = salariesByUser.filter((salary) => {
         const date = dayjs().year(salary.year).month(salary.month);
@@ -130,10 +133,70 @@ function filterSalaries(
     });
   }
 
+  // add to userExtraSalariesByUserAndSite array the extra salary rate,
+  const extraSalaries = salaries.userExtraSalariesByUserAndSite
+    .map((extra) => {
+      return {
+        ...extra,
+        extraRate: getExtraSalaryRate(
+          extra.userId,
+          rates,
+          salaries.userSalaries.filter(
+            (s) => s.siteId === extra.siteId || s.userId === extra.userId,
+          ),
+        ),
+      };
+    })
+    // NOW filter extra salaries by filter month and year
+    .filter((extra) => {
+      const month = extra.month;
+      const year = extra.year;
+      if (filter.month <= 5) {
+        if (year === filter.year && month >= 0 && month <= filter.month) {
+          return extra.amount;
+        }
+      } else if (filter.month > 5) {
+        if (year === filter.year && month > 5 && month <= filter.month) {
+          return extra.amount;
+        }
+      }
+    });
+  // group extra salaries by site and sum them, then add them to extraSalaryBySite
+  extraSalaries.forEach((extra) => {
+    const siteId = extra.siteId;
+    const userId = extra.userId;
+    // if (!extraSalaryBySite[siteId]) {
+    //   extraSalaryBySite[siteId] = 0;
+    // }
+    // if (!extraSalaryByUser[userId]) {
+    //   extraSalaryByUser[userId] = 0;
+    // }
+    // extraSalaryByUser[userId] += extra.hours * extra.extraRate;
+    // extraSalaryBySite[siteId] += extra.hours * extra.extraRate;
+    const amount = extra.hours * extra.extraRate;
+    if (!extraSalaryByUserAndSite[userId]) {
+      extraSalaryByUserAndSite[userId] = {};
+    }
+    if (!extraSalaryByUserAndSite[userId][siteId]) {
+      extraSalaryByUserAndSite[userId][siteId] = 0;
+    }
+    extraSalaryByUserAndSite[userId][siteId] += amount;
+
+    if (!extraSalaryBySiteAndUser[siteId]) {
+      extraSalaryBySiteAndUser[siteId] = {};
+    }
+    if (!extraSalaryBySiteAndUser[siteId][userId]) {
+      extraSalaryBySiteAndUser[siteId][userId] = 0;
+    }
+    extraSalaryBySiteAndUser[siteId][userId] += amount;
+  });
   const isEmpty = _.isEmpty(filteredSalaries);
   return {
     filteredSalaries,
-    extraSalaryByUser,
+    // extraSalaryByUser,
+    // extraSalaryBySite,
+    extraSalaryByUserAndSite,
+    extraSalaryBySiteAndUser,
     totalAmount,
     totalHours,
     isEmpty,
@@ -173,9 +236,18 @@ export default function SalariesDashboard({
   rates,
 }: Props) {
   const [data, setData] = useState<GroupedSalaries>({});
-  const [extraSalaries, setExtraSalaries] = useState<Record<string, number>>(
-    {},
-  );
+  // const [extraSalaries, setExtraSalaries] = useState<Record<string, number>>(
+  //   {},
+  // );
+  // const [extraSalariesBySite, setExtraSalariesBySite] = useState<
+  //   Record<string, number>
+  // >({});
+  const [extraSalariesByUserAndSite, setExtraSalariesByUserAndSite] = useState<
+    Record<string, Record<string, number>>
+  >({});
+  const [extraSalariesBySiteAndUser, setExtraSalariesBySiteAndUser] = useState<
+    Record<string, Record<string, number>>
+  >({});
   const [isEmpty, setIsEmpty] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
   const [totalHours, setTotalHours] = useState(0);
@@ -201,14 +273,20 @@ export default function SalariesDashboard({
   useEffect(() => {
     const {
       filteredSalaries,
-      extraSalaryByUser,
+      // extraSalaryByUser,
+      // extraSalaryBySite,
+      extraSalaryByUserAndSite,
+      extraSalaryBySiteAndUser,
       totalAmount,
       totalHours,
       isEmpty,
     } = filterSalaries(salaries, rates, filter);
 
     setIsEmpty(isEmpty);
-    setExtraSalaries(extraSalaryByUser);
+    // setExtraSalaries(extraSalaryByUser);
+    // setExtraSalariesBySite(extraSalaryBySite);
+    setExtraSalariesByUserAndSite(extraSalaryByUserAndSite);
+    setExtraSalariesBySiteAndUser(extraSalaryBySiteAndUser);
     setData(filteredSalaries);
     setTotalAmount(totalAmount);
     setTotalHours(totalHours);
@@ -231,6 +309,7 @@ export default function SalariesDashboard({
               data={data}
               totalAmount={totalAmount}
               totalHours={totalHours}
+              extraSalaries={extraSalariesBySiteAndUser}
             />
             <TotalsComponent
               totalAmount={totalAmount}
@@ -248,7 +327,7 @@ export default function SalariesDashboard({
               data={data}
               totalAmount={totalAmount}
               totalHours={totalHours}
-              extraSalaries={extraSalaries}
+              extraSalaries={extraSalariesByUserAndSite}
             />
             <TotalsComponent
               totalAmount={totalAmount}
@@ -351,12 +430,19 @@ function SalaryByUser({
 }: {
   data: GroupedSalaries;
   usersById: Record<string, User>;
-  extraSalaries: Record<string, number>;
+  extraSalaries: Record<string, Record<string, number>>; // {[userId: string]: {[siteId: string]: number}}
   totalHours: number;
   totalAmount: number;
 }) {
   const userIds = _.keys(data);
 
+  const sumExtraSalary = (extraSalaries?: Record<string, number>): number => {
+    return (
+      (extraSalaries &&
+        Object.values(extraSalaries).reduce((acc, curr) => acc + curr, 0)) ??
+      0
+    );
+  };
   return (
     <>
       {userIds.map((userId) => {
@@ -368,7 +454,7 @@ function SalaryByUser({
             <UserSalaryCard
               user={user}
               salary={filteredSalaries}
-              extraSalary={extraSalaries[userId]}
+              extraSalary={sumExtraSalary(extraSalaries[userId])}
             />
           </Grid>
         );
@@ -380,9 +466,11 @@ function SalaryByUser({
 function SalaryBySite({
   data,
   sitesById,
+  extraSalaries,
 }: {
   data: GroupedSalaries;
   sitesById: Record<string, Site>;
+  extraSalaries: Record<string, Record<string, number>>; // {[siteId: string]: {[userId: string]: number}}
   totalHours: number;
   totalAmount: number;
 }) {
@@ -393,10 +481,15 @@ function SalaryBySite({
       {siteIds.map((siteId) => {
         const site = sitesById[siteId];
         const filteredSalaries = data[siteId];
+        const extraSalary = extraSalaries[siteId];
         if (!site || !filteredSalaries) return null;
         return (
           <Grid key={siteId} size={{ xs: 12, sm: 6, md: 4 }}>
-            <SiteSalaryCard site={site} salary={filteredSalaries} />
+            <SiteSalaryCard
+              site={site}
+              salary={filteredSalaries}
+              extraSalary={extraSalary}
+            />
           </Grid>
         );
       })}

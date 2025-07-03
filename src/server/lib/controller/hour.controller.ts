@@ -157,9 +157,7 @@ export function normalizeHourLogsByUser(
 
   const hours = hourlogs.map((hourlog) => {
     const site = sites.find((site) => site.id === hourlog.SiteRate.siteId);
-    if (!site) {
-      return;
-    }
+    if (!site) return;
     return {
       ...hourlog,
       siteId: site.id,
@@ -230,9 +228,7 @@ export function normalizeUserSalaries(
 ) {
   let hours = hourlogs.map((hourlog) => {
     const site = sites.find((site) => site.id === hourlog.SiteRate.siteId);
-    if (!site) {
-      return;
-    }
+    if (!site) return;
     return {
       ...hourlog,
       siteId: site.id,
@@ -244,11 +240,20 @@ export function normalizeUserSalaries(
   const groupedByUser = _.groupBy(hours, 'userId');
   const userSalaries: UserSalary[] = [];
   const userExtraSalaries: [string, number, number, number][] = []; // [userId, year, month, extraSalaryHours][]
+
+  type ExtraSalary = {
+    userId: string;
+    siteId: string;
+    year: number;
+    month: number;
+    hours: number;
+    amount: number;
+  };
+  const userExtraSalariesByUserAndSite: ExtraSalary[] = [];
+
   _.forOwn(groupedByUser, (userLogs, userId) => {
     const user = userLogs?.[0]?.User;
-    if (!user) {
-      return;
-    }
+    if (!user) return;
     const groupedByYear = _.groupBy(userLogs, 'year');
     _.forOwn(groupedByYear, (yearLogs, year) => {
       const groupedByMonth = _.groupBy(yearLogs, 'month');
@@ -302,6 +307,14 @@ export function normalizeUserSalaries(
             saturdayPreAmount,
             saturdayPostAmount,
           });
+          userExtraSalariesByUserAndSite.push({
+            userId,
+            siteId,
+            year: +year,
+            month: +month,
+            hours: Math.round((totalHours / 12) * 100) / 100,
+            amount: Math.round((totalAmount / 12) * 100) / 100,
+          });
         });
         userExtraSalaries.push([
           userId,
@@ -313,7 +326,7 @@ export function normalizeUserSalaries(
     });
   });
 
-  return { userSalaries, userExtraSalaries };
+  return { userSalaries, userExtraSalaries, userExtraSalariesByUserAndSite };
 }
 
 function sumHoursByRate(hours: UserHourLogFormInput['hours'], rate: RateType) {

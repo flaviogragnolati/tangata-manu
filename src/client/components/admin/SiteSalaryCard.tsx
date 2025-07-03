@@ -22,15 +22,32 @@ import { ARSformatter } from '~/utils/helpers';
 type Props = {
   site: Site;
   salary: {
+    userId: string;
     userName: string | null;
     totalHours: number;
     totalAmount: number;
   }[];
+  extraSalary?: Record<string, number>; // {[userId: string]: number}
 };
-export default function SiteSalaryCard({ site, salary }: Props) {
+export default function SiteSalaryCard({ site, salary, extraSalary }: Props) {
   if (!salary || salary.length === 0) {
     return null;
   }
+  const totalExtraSalary = Object.values(extraSalary ?? {}).reduce(
+    (acc, curr) => acc + curr,
+    0,
+  );
+
+  const monthUsers = salary.map((row) => row.userId);
+  const totalExtraSalaryForMonthUsers = Object.entries(
+    extraSalary ?? {},
+  ).reduce((acc, [userId, amount]) => {
+    if (monthUsers.includes(userId)) {
+      return acc + amount;
+    }
+    return acc;
+  }, 0);
+
   return (
     <Card sx={{ maxWidth: 500 }} className="m-2">
       <CardHeader
@@ -89,6 +106,18 @@ export default function SiteSalaryCard({ site, salary }: Props) {
               )}
             </strong>
           </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Aguinaldo acumulado:{' '}
+            <strong>{ARSformatter.format(totalExtraSalary ?? 0)}</strong>
+          </Typography>
+          {totalExtraSalaryForMonthUsers !== totalExtraSalary && (
+            <Typography variant="body2" color="text.secondary">
+              Aguinaldo acumulado (para presentes):{' '}
+              <strong>
+                {ARSformatter.format(totalExtraSalaryForMonthUsers ?? 0)}
+              </strong>
+            </Typography>
+          )}
         </Stack>
       </CardContent>
     </Card>
