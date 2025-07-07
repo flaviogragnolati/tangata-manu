@@ -13,3 +13,13 @@ export type GroupedSalaries = Record<
   string | number,
   UserSalaryWithExtra[] | null
 >;
+
+export type ExtraSalary = {
+  userId: string;
+  siteId: string;
+  year: number;
+  month: number;
+  normalHours: number;
+  saturdayPreHours: number;
+  saturdayPostHours: number;
+};

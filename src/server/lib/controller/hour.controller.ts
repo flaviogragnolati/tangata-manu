@@ -2,6 +2,7 @@ import _ from 'lodash';
 import dayjs from 'dayjs';
 import type { Site, Prisma } from '@prisma/client';
 
+import { ExtraHours } from '~/types';
 import type { RateType, UserHourLogFormInput } from '~/schemas';
 
 type UserHourLogWithPayload = Prisma.UserHourLogGetPayload<{
@@ -239,17 +240,6 @@ export function normalizeUserSalaries(
 
   const groupedByUser = _.groupBy(hours, 'userId');
   const userSalaries: UserSalary[] = [];
-  const userExtraSalaries: [string, number, number, number][] = []; // [userId, year, month, extraSalaryHours][]
-
-  type ExtraSalary = {
-    userId: string;
-    siteId: string;
-    year: number;
-    month: number;
-    hours: number;
-    amount: number;
-  };
-  const userExtraSalariesByUserAndSite: ExtraSalary[] = [];
 
   _.forOwn(groupedByUser, (userLogs, userId) => {
     const user = userLogs?.[0]?.User;
@@ -307,26 +297,63 @@ export function normalizeUserSalaries(
             saturdayPreAmount,
             saturdayPostAmount,
           });
-          userExtraSalariesByUserAndSite.push({
-            userId,
-            siteId,
-            year: +year,
-            month: +month,
-            hours: Math.round((totalHours / 12) * 100) / 100,
-            amount: Math.round((totalAmount / 12) * 100) / 100,
-          });
         });
-        userExtraSalaries.push([
-          userId,
-          +year,
-          +month,
-          Math.round((extraSalaryHours / 12) * 100) / 100,
-        ]);
       });
     });
   });
 
-  return { userSalaries, userExtraSalaries, userExtraSalariesByUserAndSite };
+  const extraSalaries: {
+    userId: string;
+    siteId: string;
+    first: ExtraHours;
+    second: ExtraHours;
+  }[] = [];
+  const users = _.keys(groupedByUser);
+  users.forEach((userId) => {
+    const userExtraSalaries = getExtraSalaryForUser(userSalaries, userId);
+    extraSalaries.push(...userExtraSalaries);
+  });
+
+  return { userSalaries, extraSalaries };
+}
+
+export const isFirstHalf = (month: number) => month <= 6;
+export const isSecondHalf = (month: number) => month > 6;
+
+function getExtraSalaryForUser(salaries: UserSalary[], userId: string) {
+  const userHalfHours = salaries.filter((salary) => salary.userId === userId);
+
+  const userExtraHoursBySite: Record<
+    string,
+    Record<'first' | 'second', ExtraHours>
+  > = {}; // {[siteId: string]: {first: ExtraHours, second: ExtraHours}};
+  userHalfHours.forEach((salary) => {
+    const half = isFirstHalf(salary.month) ? 'first' : 'second';
+    if (!userExtraHoursBySite[salary.siteId]) {
+      userExtraHoursBySite[salary.siteId] = {
+        first: { normalHours: 0, saturdayPreHours: 0, saturdayPostHours: 0 },
+        second: { normalHours: 0, saturdayPreHours: 0, saturdayPostHours: 0 },
+      };
+    }
+    const extraHours = userExtraHoursBySite[salary.siteId]?.[half];
+    if (extraHours) {
+      extraHours.normalHours +=
+        Math.round((salary.normalHours / 12) * 100) / 100;
+      extraHours.saturdayPreHours +=
+        Math.round((salary.saturdayPreHours / 12) * 100) / 100;
+      extraHours.saturdayPostHours +=
+        Math.round((salary.saturdayPostHours / 12) * 100) / 100;
+    }
+  });
+
+  return Object.entries(userExtraHoursBySite).map(([siteId, extraHours]) => {
+    return {
+      userId,
+      siteId,
+      first: extraHours.first,
+      second: extraHours.second,
+    };
+  });
 }
 
 function sumHoursByRate(hours: UserHourLogFormInput['hours'], rate: RateType) {
