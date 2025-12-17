@@ -75,18 +75,21 @@ function filterSalaries(
         if (!extraSalaryByUser[userId]) {
           extraSalaryByUser[userId] = 0;
         }
-        extraSalaries.forEach((extraSalary) => {
-          const rate = getActiveRate(userId, extraSalary.siteId, rates);
-          const extra = extraSalary[half];
-          const normalAmount = extra.normalHours * rate.normalRate;
-          const saturdayPreAmount =
-            extra.saturdayPreHours * rate.saturdayPreRate;
-          const saturdayPostAmount =
-            extra.saturdayPostHours * rate.saturdayPostRate;
-          const amount = normalAmount + saturdayPreAmount + saturdayPostAmount;
+        extraSalaries
+          .filter((extraSalary) => extraSalary.year === filter.year)
+          .forEach((extraSalary) => {
+            const rate = getActiveRate(userId, extraSalary.siteId, rates);
+            const extra = extraSalary[half];
+            const normalAmount = extra.normalHours * rate.normalRate;
+            const saturdayPreAmount =
+              extra.saturdayPreHours * rate.saturdayPreRate;
+            const saturdayPostAmount =
+              extra.saturdayPostHours * rate.saturdayPostRate;
+            const amount =
+              normalAmount + saturdayPreAmount + saturdayPostAmount;
 
-          extraSalaryByUser[userId]! += amount;
-        });
+            extraSalaryByUser[userId]! += amount;
+          });
       },
     );
   } else if (filter.groupBy === 'groupBySite') {
@@ -112,18 +115,21 @@ function filterSalaries(
         if (!extraSalaryBySite[siteId]) {
           extraSalaryBySite[siteId] = 0;
         }
-        extraSalaries.forEach((extraSalary) => {
-          const rate = getActiveRate(extraSalary.userId, siteId, rates);
-          const extra = extraSalary[half];
-          const normalAmount = extra.normalHours * rate.normalRate;
-          const saturdayPreAmount =
-            extra.saturdayPreHours * rate.saturdayPreRate;
-          const saturdayPostAmount =
-            extra.saturdayPostHours * rate.saturdayPostRate;
-          const amount = normalAmount + saturdayPreAmount + saturdayPostAmount;
+        extraSalaries
+          .filter((extraSalary) => extraSalary.year === filter.year)
+          .forEach((extraSalary) => {
+            const rate = getActiveRate(extraSalary.userId, siteId, rates);
+            const extra = extraSalary[half];
+            const normalAmount = extra.normalHours * rate.normalRate;
+            const saturdayPreAmount =
+              extra.saturdayPreHours * rate.saturdayPreRate;
+            const saturdayPostAmount =
+              extra.saturdayPostHours * rate.saturdayPostRate;
+            const amount =
+              normalAmount + saturdayPreAmount + saturdayPostAmount;
 
-          extraSalaryBySite[siteId]! += amount;
-        });
+            extraSalaryBySite[siteId]! += amount;
+          });
       },
     );
   }

@@ -305,6 +305,7 @@ export function normalizeUserSalaries(
   const extraSalaries: {
     userId: string;
     siteId: string;
+    year: number;
     first: ExtraHours;
     second: ExtraHours;
   }[] = [];
@@ -317,25 +318,29 @@ export function normalizeUserSalaries(
   return { userSalaries, extraSalaries };
 }
 
-export const isFirstHalf = (month: number) => month <= 6;
-export const isSecondHalf = (month: number) => month > 6;
+export const isFirstHalf = (month: number) => month <= 5;
+export const isSecondHalf = (month: number) => month > 5;
 
 function getExtraSalaryForUser(salaries: UserSalary[], userId: string) {
   const userHalfHours = salaries.filter((salary) => salary.userId === userId);
 
   const userExtraHoursBySite: Record<
-    string,
-    Record<'first' | 'second', ExtraHours>
-  > = {}; // {[siteId: string]: {first: ExtraHours, second: ExtraHours}};
+    number,
+    Record<string, Record<'first' | 'second', ExtraHours>>
+  > = {}; // {[year: number]: {[siteId: string]: {first: ExtraHours, second: ExtraHours}}};
+
   userHalfHours.forEach((salary) => {
     const half = isFirstHalf(salary.month) ? 'first' : 'second';
-    if (!userExtraHoursBySite[salary.siteId]) {
-      userExtraHoursBySite[salary.siteId] = {
+    if (!userExtraHoursBySite[salary.year]) {
+      userExtraHoursBySite[salary.year] = {};
+    }
+    if (!userExtraHoursBySite[salary.year]![salary.siteId]) {
+      userExtraHoursBySite[salary.year]![salary.siteId] = {
         first: { normalHours: 0, saturdayPreHours: 0, saturdayPostHours: 0 },
         second: { normalHours: 0, saturdayPreHours: 0, saturdayPostHours: 0 },
       };
     }
-    const extraHours = userExtraHoursBySite[salary.siteId]?.[half];
+    const extraHours = userExtraHoursBySite[salary.year]![salary.siteId]![half];
     if (extraHours) {
       extraHours.normalHours +=
         Math.round((salary.normalHours / 12) * 100) / 100;
@@ -346,14 +351,27 @@ function getExtraSalaryForUser(salaries: UserSalary[], userId: string) {
     }
   });
 
-  return Object.entries(userExtraHoursBySite).map(([siteId, extraHours]) => {
-    return {
-      userId,
-      siteId,
-      first: extraHours.first,
-      second: extraHours.second,
-    };
+  const result: {
+    userId: string;
+    siteId: string;
+    year: number;
+    first: ExtraHours;
+    second: ExtraHours;
+  }[] = [];
+
+  Object.entries(userExtraHoursBySite).forEach(([year, siteData]) => {
+    Object.entries(siteData).forEach(([siteId, extraHours]) => {
+      result.push({
+        userId,
+        siteId,
+        year: Number(year),
+        first: extraHours.first,
+        second: extraHours.second,
+      });
+    });
   });
+
+  return result;
 }
 
 function sumHoursByRate(hours: UserHourLogFormInput['hours'], rate: RateType) {
