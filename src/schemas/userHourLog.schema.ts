@@ -21,7 +21,7 @@ export const userHourLogFormInputSchema = z.object({
 export type UserHourLogFormInput = z.infer<typeof userHourLogFormInputSchema>;
 
 export const userHourLogFormSchema = z.object({
-  year: z.number().int().min(2023).max(2025),
+  year: z.number().int().min(2023).max(2030),
   month: z.number().int().min(0).max(11),
   hours: userHourLogSchema,
 });
