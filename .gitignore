@@ -52,3 +52,6 @@ yarn-error.log*
 .codex
 .kilo
 skills-lock.json
+
+# temp
+tmp/

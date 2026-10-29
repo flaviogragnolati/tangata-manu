@@ -13,7 +13,8 @@
     "dev": "next dev",
     "postinstall": "prisma generate",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test \"src/**/*.test.js\""
   },
   "engines": {
     "node": "24.x"

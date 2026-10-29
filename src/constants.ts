@@ -1,3 +1,6 @@
+const googleSignInError =
+  'No se pudo completar el inicio de sesión con Google. Intente nuevamente.';
+
 export const C = {
   rateTypes: ['normal', 'saturdayPre', 'saturdayPost'],
   rateTypesMap: {
@@ -19,6 +22,16 @@ export const C = {
     'Noviembre',
     'Diciembre',
   ],
+  authErrorsMap: {
+    OAuthSignin: googleSignInError,
+    OAuthCallback: googleSignInError,
+    OAuthCreateAccount: googleSignInError,
+    Callback: googleSignInError,
+    OAuthAccountNotLinked:
+      'Este correo ya está vinculado a otra forma de ingreso.',
+    SessionRequired: 'Debe iniciar sesión para continuar.',
+    default: 'Ocurrió un error al iniciar sesión. Intente nuevamente.',
+  },
 } as const;
 
 export default C;

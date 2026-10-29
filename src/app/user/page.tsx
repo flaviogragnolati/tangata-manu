@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
+import Logo from '~/client/components/ui/Logo';
 import Title from '~/client/components/ui/Title';
 import LinkButton from '~/client/components/ui/LinkButton';
 import LogoutButton from '~/client/components/ui/LogoutButton';
@@ -16,6 +17,9 @@ export default async function AppHome() {
     <div>
       <div className="flex justify-start py-4">
         <LogoutButton />
+      </div>
+      <div className="flex justify-center pb-4">
+        <Logo size="sm" />
       </div>
       <Title>Hola, {name}</Title>
       <div className="flex flex-col space-y-8">

@@ -18,7 +18,6 @@ const roboto = Roboto({
 export const metadata = {
   title: 'Consultorios',
   description: 'Gestion de Consultorios',
-  icons: [{ rel: 'icon', url: '/favicon.ico' }],
 };
 
 export default function RootLayout({
