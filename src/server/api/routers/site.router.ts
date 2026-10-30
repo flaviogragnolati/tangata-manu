@@ -65,6 +65,7 @@ export const siteRouter = createTRPCRouter({
   previewRateChange: adminProcedure
     .input(rateChangeSchema)
     .query(async ({ input, ctx }) => {
+      await assertUserActive(ctx.db, input);
       const siteId = await resolveSiteId(ctx.db, input);
       const data = await loadSiteData(ctx.db, siteId);
       const plan = runPlan(input, data);
@@ -78,6 +79,7 @@ export const siteRouter = createTRPCRouter({
         return await ctx.db.$transaction(
           async (tx) => {
             // Re-plan on fresh data: the preview's plan is only for display
+            await assertUserActive(tx, change);
             const siteId = await resolveSiteId(tx, change);
             const data = await loadSiteData(tx, siteId);
             const plan = runPlan(change, data);
@@ -350,6 +352,21 @@ const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+
+async function assertUserActive(db: Db, change: RateChangeInput) {
+  if (change.kind !== 'replace' || !change.userId) return;
+  const user = await db.user.findUnique({
+    where: { id: change.userId },
+    select: { deactivatedAt: true },
+  });
+  if (user?.deactivatedAt) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message:
+        'El usuario está dado de baja. Reactívelo antes de cargarle una tarifa.',
+    });
+  }
+}
 
 async function resolveSiteId(db: Db, change: RateChangeInput) {
   if (change.kind === 'replace') {

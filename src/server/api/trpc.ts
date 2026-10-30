@@ -162,3 +162,14 @@ export const superAdminProcedure = t.procedure.use(ensureUserIsSuperadmin);
 export const adminProcedure = t.procedure.use(ensureUserIsAdmin);
 
 export const userProcedure = t.procedure.use(ensureUserIsAuthed);
+
+/** A user dado de baja can still read their history but not load or edit hours. */
+export const activeUserProcedure = userProcedure.use(({ ctx, next }) => {
+  if (ctx.session.user.deactivatedAt) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Su usuario está dado de baja. Consulte al administrador.',
+    });
+  }
+  return next();
+});

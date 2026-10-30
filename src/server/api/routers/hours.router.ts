@@ -17,6 +17,7 @@ import {
 import { computeAmount } from '~/server/lib/rateChanges';
 import { planUserHourLog } from '~/server/lib/userHourLogPlan';
 import {
+  activeUserProcedure,
   adminProcedure,
   createTRPCRouter,
   userProcedure,
@@ -180,13 +181,13 @@ export const hoursRouter = createTRPCRouter({
 
       return normalizeHourLogs(hourlogs, sites);
     }),
-  previewUserHourLog: userProcedure
+  previewUserHourLog: activeUserProcedure
     .input(userHourLogFormSchema)
     .query(async ({ input, ctx }) => {
       const { perSite } = await planHourLoad(ctx.db, input, ctx.user.id);
       return perSite;
     }),
-  addUserHourLog: userProcedure
+  addUserHourLog: activeUserProcedure
     .input(userHourLogFormSchema)
     .mutation(async ({ input, ctx }) => {
       const { toCreate, toUpdate, perSite } = await planHourLoad(
@@ -236,7 +237,7 @@ export const hoursRouter = createTRPCRouter({
 
       return true;
     }),
-  updateUserHourLog: userProcedure
+  updateUserHourLog: activeUserProcedure
     .input(updateHourLogSchema)
     .mutation(async ({ input, ctx }) => {
       const {

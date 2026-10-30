@@ -3,6 +3,11 @@ import dayjs from 'dayjs';
 import type { Site, Prisma } from '@prisma/client';
 
 import { ExtraHours } from '~/types';
+import {
+  latestRateByUserSite,
+  userSiteKey,
+  type RateValues,
+} from '~/client/lib/salaries';
 
 type UserHourLogWithPayload = Prisma.UserHourLogGetPayload<{
   include: {
@@ -231,6 +236,10 @@ export type UserSalary = {
   totalAmount: number;
 };
 
+/**
+ * `extraSalaries[].lastRate` comes from the newest of the received logs only;
+ * Salarios passes them all.
+ */
 export function normalizeUserSalaries(
   hourlogs: UserHourLogWithPayload[],
   sites: Site[],
@@ -316,11 +325,19 @@ export function normalizeUserSalaries(
     year: number;
     first: ExtraHours;
     second: ExtraHours;
+    lastRate: RateValues | null;
   }[] = [];
+  const lastRates = latestRateByUserSite(hourlogs);
   const users = _.keys(groupedByUser);
   users.forEach((userId) => {
     const userExtraSalaries = getExtraSalaryForUser(userSalaries, userId);
-    extraSalaries.push(...userExtraSalaries);
+    extraSalaries.push(
+      ...userExtraSalaries.map((extraSalary) => ({
+        ...extraSalary,
+        lastRate:
+          lastRates.get(userSiteKey(userId, extraSalary.siteId)) ?? null,
+      })),
+    );
   });
 
   return { userSalaries, extraSalaries };

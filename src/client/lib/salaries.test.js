@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { amountDeltas, pctChange } from './salaries.ts';
+import { amountDeltas, latestRateByUserSite, pctChange } from './salaries.ts';
 
 /**
  * @param {string} userId
@@ -71,4 +71,27 @@ await test('amountDeltas can group by site', () => {
 
   assert.deepEqual(deltas.byKey, { 1: 20, 2: null });
   assert.equal(deltas.total, 70);
+});
+
+/** @param {number} siteId @param {number} normalRate */
+const siteRate = (siteId, normalRate) => ({
+  siteId,
+  normalRate,
+  saturdayPreRate: null,
+  saturdayPostRate: 0,
+});
+
+await test('latestRateByUserSite keeps the newest log’s applied rate per user and site', () => {
+  const latest = latestRateByUserSite([
+    { userId: 'ana', year: 2026, month: 2, SiteRate: siteRate(1, 2000) },
+    { userId: 'ana', year: 2026, month: 1, SiteRate: siteRate(1, 1000) },
+    { userId: 'ana', year: 2025, month: 11, SiteRate: siteRate(2, 500) },
+  ]);
+  assert.deepEqual(latest.get('ana:1'), {
+    normalRate: 2000,
+    saturdayPreRate: 0,
+    saturdayPostRate: 0,
+  });
+  assert.equal(latest.get('ana:2')?.normalRate, 500);
+  assert.equal(latest.size, 2);
 });

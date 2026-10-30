@@ -23,12 +23,15 @@ declare module 'next-auth' {
       id: string;
       // ...other properties
       role: UserRole;
+      /** A `Date` on the server; serialized to a string through `useSession`. */
+      deactivatedAt: Date | null;
     } & DefaultSession['user'];
   }
 
   interface User {
     // ...other properties
     role: UserRole;
+    deactivatedAt: Date | null;
   }
 }
 
@@ -48,6 +51,7 @@ export const authOptions: NextAuthOptions = {
         ...session.user,
         id: user.id,
         role: user.role,
+        deactivatedAt: user.deactivatedAt ?? null,
       },
     }),
   },

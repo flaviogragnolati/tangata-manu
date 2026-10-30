@@ -1,4 +1,21 @@
-import { isSamePeriod, previousPeriod, type Period } from './period.ts';
+import {
+  comparePeriods,
+  isSamePeriod,
+  previousPeriod,
+  type Period,
+} from './period.ts';
+
+type RateValuesLike = {
+  normalRate: number | null;
+  saturdayPreRate: number | null;
+  saturdayPostRate: number | null;
+};
+
+export type RateValues = {
+  normalRate: number;
+  saturdayPreRate: number;
+  saturdayPostRate: number;
+};
 
 /** Rounded % change; null when there is no previous amount to compare with. */
 export function pctChange(current: number, previous: number): number | null {
@@ -40,4 +57,39 @@ export function amountDeltas(
     byKey[key] = pctChange(amount, before[key] ?? 0);
   }
   return { byKey, total: pctChange(currentTotal, previousTotal) };
+}
+
+const rateValues = (rate: RateValuesLike | null): RateValues => ({
+  normalRate: rate?.normalRate ?? 0,
+  saturdayPreRate: rate?.saturdayPreRate ?? 0,
+  saturdayPostRate: rate?.saturdayPostRate ?? 0,
+});
+
+export const userSiteKey = (userId: string, siteId: number | string) =>
+  `${userId}:${siteId}`;
+
+/**
+ * Values of the Tarifa aplicada of each user's newest log per site, keyed by
+ * `userSiteKey`. Uses only the logs it receives.
+ */
+export function latestRateByUserSite(
+  logs: {
+    userId: string;
+    year: number;
+    month: number;
+    SiteRate: RateValuesLike & { siteId: number };
+  }[],
+): Map<string, RateValues> {
+  const latest = new Map<string, { period: Period; rate: RateValues }>();
+  for (const log of logs) {
+    const key = userSiteKey(log.userId, log.SiteRate.siteId);
+    const current = latest.get(key);
+    if (!current || comparePeriods(log, current.period) > 0) {
+      latest.set(key, {
+        period: { year: log.year, month: log.month },
+        rate: rateValues(log.SiteRate),
+      });
+    }
+  }
+  return new Map([...latest].map(([key, { rate }]) => [key, rate]));
 }
