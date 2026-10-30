@@ -8,6 +8,12 @@ export const C = {
     saturdayPre: 'Sábado hasta las 14:30',
     saturdayPost: 'Sábado después de las 14:30',
   },
+  rateChangeKindsMap: {
+    correction: 'Corrección de tarifa',
+    retroactive: 'Actualización retroactiva',
+    removal: 'Baja de tarifa por usuario',
+    hourLoad: 'Carga de horas con la tarifa vigente',
+  },
   months: [
     'Enero',
     'Febrero',

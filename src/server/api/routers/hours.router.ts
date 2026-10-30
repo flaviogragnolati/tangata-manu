@@ -4,11 +4,17 @@ import { TRPCError } from '@trpc/server';
 import type { Prisma } from '@prisma/client';
 
 import { dayjs } from '~/utils/dayjs';
-import { updateHourLogSchema, userHourLogFormSchema } from '~/schemas';
+import {
+  updateHourLogSchema,
+  userHourLogFormSchema,
+  type UserHourLogForm,
+} from '~/schemas';
+import type { LastRateChange } from '~/types';
 import {
   normalizeHourLogs,
   normalizeUserSalaries,
 } from '~/controller/hour.controller';
+import { planUserHourLog } from '~/server/lib/userHourLogPlan';
 import {
   adminProcedure,
   createTRPCRouter,
@@ -173,161 +179,59 @@ export const hoursRouter = createTRPCRouter({
 
       return normalizeHourLogs(hourlogs, sites);
     }),
+  previewUserHourLog: userProcedure
+    .input(userHourLogFormSchema)
+    .query(async ({ input, ctx }) => {
+      const { perSite } = await planHourLoad(ctx.db, input, ctx.user.id);
+      return perSite;
+    }),
   addUserHourLog: userProcedure
     .input(userHourLogFormSchema)
     .mutation(async ({ input, ctx }) => {
-      // 1. get siteIds from input
-      const siteIds = _.uniq(input.hours.map((entry) => entry.site));
-      // 2. find previous userHourLog for same userId, year and month
-
-      const [siteRates, previousUserHourLogs] = await Promise.all([
-        await ctx.db.siteRate.findMany({
-          where: {
-            siteId: { in: siteIds },
-            active: true,
-          },
-        }),
-        await ctx.db.userHourLog.findMany({
-          where: {
-            userId: ctx.user.id,
-            year: input.year,
-            month: input.month,
-          },
-          include: {
-            SiteRate: {
-              include: {
-                Site: true,
-              },
-            },
-          },
-        }),
-      ]);
-
-      // 3. sum hours by site and by rate
-      const hoursBySite = _.groupBy(input.hours, 'site');
-      const hoursBySiteAndRate = _.mapValues(hoursBySite, (hours) =>
-        _.groupBy(hours, 'rate'),
+      const { toCreate, toUpdate, perSite } = await planHourLoad(
+        ctx.db,
+        input,
+        ctx.user.id,
       );
 
-      const userHourLogs: {
-        siteRateId: number;
-        siteId: number;
-        normalHours: number;
-        saturdayPreHours: number;
-        saturdayPostHours: number;
-        amount: number;
-      }[] = [];
+      const missing = perSite.find((site) => site.missingRate);
+      if (missing) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `El sitio ${missing.siteName} no tiene tarifa vigente. Avise al administrador.`,
+        });
+      }
 
-      // 4. parse hoursBySiteAndRate and calculate amount
-      _.forOwn(hoursBySiteAndRate, (hoursByRate, siteId) => {
-        // find user specific siteRate if exists else get the first siteRate
-        const siteRate =
-          siteRates.find(
-            (siteRate) =>
-              siteRate.siteId === parseInt(siteId) &&
-              siteRate.userId === ctx.user.id,
-          ) ??
-          siteRates
-            .filter((siteRate) => !siteRate.userId)
-            .find((siteRate) => siteRate.siteId === parseInt(siteId));
-
-        if (!siteRate) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Missing active siteRate for siteId: ${siteId}`,
-          });
-        }
-
-        const normalHours =
-          hoursByRate.normal?.reduce((acc, curr) => acc + curr.hours, 0) ?? 0;
-        const saturdayPreHours =
-          hoursByRate.saturdayPre?.reduce((acc, curr) => acc + curr.hours, 0) ??
-          0;
-        const saturdayPostHours =
-          hoursByRate.saturdayPost?.reduce(
-            (acc, curr) => acc + curr.hours,
-            0,
-          ) ?? 0;
-
-        const amount =
-          normalHours * (siteRate.normalRate ?? 0) +
-          saturdayPreHours * (siteRate.saturdayPreRate ?? 0) +
-          saturdayPostHours * (siteRate.saturdayPostRate ?? 0);
-
-        const data = {
-          siteRateId: siteRate.id,
-          siteId: siteRate.siteId,
-          normalHours,
-          saturdayPreHours,
-          saturdayPostHours,
-          amount,
-        };
-
-        userHourLogs.push(data);
-      });
-
-      const userHourLogsToUpdate: (Prisma.UserHourLogUncheckedUpdateInput & {
-        id: number;
-      })[] = [];
-      const userHourLogsToCreate: Prisma.UserHourLogUncheckedCreateInput[] = [];
-
-      userHourLogs.forEach((userHourLog) => {
-        // find previous userHourLog for same userId, year, month and siteRateId
-        const previousUserHourLog =
-          previousUserHourLogs.find(
-            (prevUserLog) => prevUserLog.siteRateId === userHourLog.siteRateId,
-          ) ??
-          previousUserHourLogs.find(
-            (prevUserLog) =>
-              prevUserLog.SiteRate.Site.id === userHourLog.siteId,
-          );
-
-        // if previousUserHourLog is found, we either update the same siteRateId or not
-        if (previousUserHourLog) {
-          const updatedUserHourLog = {
-            ..._.omit(previousUserHourLog, 'SiteRate'),
-            siteRateId: userHourLog.siteRateId, // if same siteRateId was found then its the same id, else it's the `new` siteRateId,
-            normalHours:
-              (previousUserHourLog.normalHours ?? 0) + userHourLog.normalHours,
-            saturdayPreHours:
-              (previousUserHourLog.saturdayPreHours ?? 0) +
-              userHourLog.saturdayPreHours,
-            saturdayPostHours:
-              (previousUserHourLog.saturdayPostHours ?? 0) +
-              userHourLog.saturdayPostHours,
-            amount: previousUserHourLog.amount + userHourLog.amount,
-            metadata: {},
+      const at = new Date().toISOString();
+      await ctx.db.$transaction([
+        ...toUpdate.map(({ id, data, metadata, rateChange }) => {
+          const lastRateChange: LastRateChange | null = rateChange && {
+            kind: 'hourLoad',
+            ...rateChange,
+            byUserId: ctx.user.id,
+            byUserName: ctx.user.name ?? null,
+            at,
           };
-          userHourLogsToUpdate.push(updatedUserHourLog);
-        }
-        // else we create a new entry
-        else {
-          const newUserHourLog = {
-            ..._.omit(userHourLog, 'siteId'),
+          return ctx.db.userHourLog.update({
+            where: { id },
+            data: {
+              ...data,
+              metadata: (lastRateChange
+                ? { ...metadata, lastRateChange }
+                : metadata) as Prisma.InputJsonValue,
+            },
+          });
+        }),
+        ctx.db.userHourLog.createMany({
+          data: toCreate.map((log) => ({
+            ...log,
             userId: ctx.user.id,
             year: input.year,
             month: input.month,
             metadata: {},
-          };
-          userHourLogsToCreate.push(newUserHourLog);
-        }
-      });
-
-      userHourLogsToUpdate.length &&
-        (await Promise.all(
-          userHourLogsToUpdate.map((userHourLog) => {
-            return ctx.db.userHourLog.update({
-              where: { id: userHourLog.id },
-              data: { ...userHourLog, id: undefined },
-            });
-          }),
-        ));
-      userHourLogsToCreate.length &&
-        (await Promise.all([
-          ctx.db.userHourLog.createMany({
-            data: userHourLogsToCreate,
-          }),
-        ]));
+          })),
+        }),
+      ]);
 
       return true;
     }),
@@ -363,3 +267,33 @@ export const hoursRouter = createTRPCRouter({
       });
     }),
 });
+
+async function planHourLoad(
+  db: Prisma.TransactionClient,
+  input: UserHourLogForm,
+  userId: string,
+) {
+  const siteIds = _.uniq(input.hours.map((entry) => entry.site));
+  const [activeRates, previousLogs, sites] = await Promise.all([
+    db.siteRate.findMany({ where: { siteId: { in: siteIds }, active: true } }),
+    db.userHourLog.findMany({
+      where: { userId, year: input.year, month: input.month },
+      include: { SiteRate: { select: { siteId: true } } },
+    }),
+    db.site.findMany({
+      where: { id: { in: siteIds } },
+      select: { id: true, name: true },
+    }),
+  ]);
+
+  return planUserHourLog({
+    entries: input.hours,
+    activeRates,
+    previousLogs: previousLogs.map((log) => ({
+      ...log,
+      siteId: log.SiteRate.siteId,
+    })),
+    sites,
+    userId,
+  });
+}
