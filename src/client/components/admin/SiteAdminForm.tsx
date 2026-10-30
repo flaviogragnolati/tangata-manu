@@ -1,120 +1,170 @@
 'use client';
 
-import { Grid2 as Grid } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
+import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { LoadingButton } from '@mui/lab';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { FormProvider, useForm, useWatch } from 'react-hook-form';
+import { SwitchElement, TextFieldElement } from 'react-hook-form-mui';
 import {
-  useForm,
-  type SubmitHandler,
-  TextareaAutosizeElement,
-  TextFieldElement,
-  SwitchElement,
-} from 'react-hook-form-mui';
+  Alert,
+  Button,
+  DialogContent,
+  FormHelperText,
+  Stack,
+  Typography,
+} from '@mui/material';
 
 import { api } from '~/trpc/react';
-import { type SiteFull } from '~/types';
+import type { SiteFull } from '~/types';
 import { showToast } from '~/client-utils/toast';
 import { siteSchema, type Site } from '~/schemas';
-import FormContainer from '~/components/form/FormContainer';
+import FormDialog, {
+  FormDialogActions,
+  FormDialogCancel,
+  FormDialogForm,
+} from '~/client/components/ui/FormDialog';
 
 type Props = {
   site?: SiteFull | null;
-  setOpen: (value: boolean) => void;
+  open: boolean;
+  onClose: () => void;
 };
-export default function SiteAdminForm({ site, setOpen }: Props) {
+
+const emptyToNull = (value: string | null | undefined) =>
+  value?.trim() ? value.trim() : null;
+
+export default function SiteAdminForm({ site, open, onClose }: Props) {
   const router = useRouter();
   const isEdit = !!site?.id;
-  const defaultValues: Site = site ?? ({} as Site);
+  const [created, setCreated] = useState<{ id: number; name: string } | null>(
+    null,
+  );
+
   const methods = useForm<Site>({
     mode: 'onBlur',
     resolver: zodResolver(siteSchema),
-    defaultValues,
+    defaultValues: {
+      id: site?.id ?? null,
+      name: site?.name ?? '',
+      location: site?.location ?? '',
+      description: site?.description ?? '',
+      allowsExtraHours: !!site?.allowsExtraHours,
+    },
   });
+  const { control, handleSubmit, formState } = methods;
+  const allowsExtraHours = useWatch({ control, name: 'allowsExtraHours' });
 
-  const {
-    handleSubmit,
-    formState: { isValid },
-  } = methods;
-
-  const {
-    mutate: createSite,
-    isError,
-    isPending,
-    error,
-  } = api.site.upsertSite.useMutation({
-    onSuccess: () => {
-      showToast('success', 'Sitio creado correctamente');
-      methods.reset();
-      setOpen(false);
+  const upsert = api.site.upsertSite.useMutation({
+    onSuccess: (saved) => {
+      showToast('success', isEdit ? 'Sitio actualizado' : 'Sitio creado');
       router.refresh();
+      if (isEdit) onClose();
+      else setCreated({ id: saved.id, name: saved.name });
     },
-    onError: (error) => {
-      showToast('error', error.message);
-    },
+    onError: (error) => showToast('error', error.message),
   });
 
-  const onSubmitHandler: SubmitHandler<Site> = (values) => {
-    createSite(values);
-  };
-
-  if (isError) {
-    showToast('error', error.message);
+  if (created) {
+    return (
+      <FormDialog open={open} title="Sitio creado" onClose={onClose}>
+        <DialogContent dividers>
+          <Typography>
+            Sitio creado. Para que los usuarios puedan cargar horas en{' '}
+            {created.name}, cargue la tarifa del sitio.
+          </Typography>
+        </DialogContent>
+        <FormDialogActions>
+          <Button onClick={onClose}>Más tarde</Button>
+          <Button
+            variant="contained"
+            LinkComponent={Link}
+            href={`/admin/site-rate?siteId=${created.id}&nueva=1`}
+          >
+            Cargar tarifa del sitio
+          </Button>
+        </FormDialogActions>
+      </FormDialog>
+    );
   }
 
   return (
-    <FormContainer
-      formContext={methods}
-      handleSubmit={handleSubmit(onSubmitHandler)}
-      FormProps={{
-        className: 'flex flex-col',
-      }}
+    <FormDialog
+      open={open}
+      title={isEdit ? 'Editar sitio' : 'Nuevo sitio'}
+      onClose={onClose}
+      dirty={formState.isDirty}
     >
-      <Grid
-        container
-        spacing={2}
-        size={{ xs: 11, md: 8 }}
-        alignSelf="center"
-        textAlign="center"
-        marginX={{ xs: '1rem' }}
-      >
-        <Grid size={{ xs: 12 }}>
-          <TextFieldElement
-            fullWidth
-            name="name"
-            label="Nombre del sitio"
-            required
-          />
-        </Grid>
-        <Grid size={{ xs: 12 }}>
-          <TextFieldElement name="location" label="Ubicación" fullWidth />
-        </Grid>
-        <Grid size={{ xs: 12 }}>
-          <TextareaAutosizeElement
-            name="description"
-            label="Descripción del sitio"
-            fullWidth
-          />
-        </Grid>
-        <Grid size={{ xs: 12 }}>
-          <SwitchElement
-            name="allowsExtraHours"
-            label="Permite horas extra (sabado, domingo y feriados)"
-          />
-        </Grid>
-        <Grid size={{ xs: 12 }}>
-          <LoadingButton
-            loading={isPending}
-            disabled={isPending || !isValid}
-            variant="contained"
-            color="success"
-            type="submit"
-            size="large"
-          >
-            {isEdit ? 'Actualizar Sitio' : 'Crear Sitio'}
-          </LoadingButton>
-        </Grid>
-      </Grid>
-    </FormContainer>
+      <FormProvider {...methods}>
+        <FormDialogForm
+          onSubmit={handleSubmit((values) =>
+            upsert.mutate({
+              ...values,
+              location: emptyToNull(values.location),
+              description: emptyToNull(values.description),
+            }),
+          )}
+        >
+          <DialogContent dividers>
+            <Stack spacing={3}>
+              <Stack spacing={2}>
+                <Typography variant="subtitle2">Datos del sitio</Typography>
+                <TextFieldElement
+                  control={control}
+                  name="name"
+                  label="Nombre"
+                  required
+                  fullWidth
+                />
+                <TextFieldElement
+                  control={control}
+                  name="location"
+                  label="Ubicación"
+                  fullWidth
+                />
+                <TextFieldElement
+                  control={control}
+                  name="description"
+                  label="Descripción"
+                  multiline
+                  minRows={3}
+                  fullWidth
+                />
+              </Stack>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">Horas de sábado</Typography>
+                <SwitchElement
+                  control={control}
+                  name="allowsExtraHours"
+                  label="Permite horas de sábado"
+                />
+                <FormHelperText sx={{ mt: 0 }}>
+                  Habilita las horas de sábado hasta y después de las 14:30 al
+                  cargar horas y en las tarifas
+                </FormHelperText>
+                {isEdit && site?.allowsExtraHours && !allowsExtraHours && (
+                  <Alert severity="warning">
+                    Las tarifas y las horas de sábado ya cargadas no cambian.
+                    Los usuarios ya no van a poder cargar horas de sábado en
+                    este sitio.
+                  </Alert>
+                )}
+              </Stack>
+            </Stack>
+          </DialogContent>
+          <FormDialogActions>
+            <FormDialogCancel />
+            <LoadingButton
+              type="submit"
+              variant="contained"
+              loading={upsert.isPending}
+            >
+              {isEdit ? 'Guardar' : 'Crear sitio'}
+            </LoadingButton>
+          </FormDialogActions>
+        </FormDialogForm>
+      </FormProvider>
+    </FormDialog>
   );
 }

@@ -26,11 +26,7 @@ export const siteRouter = createTRPCRouter({
   upsertSite: adminProcedure
     .input(siteSchema)
     .mutation(async ({ input, ctx }) => {
-      const { id, ...siteData } = input;
-      const data = {
-        ...siteData,
-        createdById: ctx.user.id,
-      };
+      const { id, ...data } = input;
       if (id) {
         try {
           return await ctx.db.site.update({
@@ -47,7 +43,9 @@ export const siteRouter = createTRPCRouter({
         }
       } else {
         try {
-          return await ctx.db.site.create({ data });
+          return await ctx.db.site.create({
+            data: { ...data, createdById: ctx.user.id },
+          });
         } catch (err) {
           const error = err as Error;
           console.error(`Error creating site: ${error.message}`);

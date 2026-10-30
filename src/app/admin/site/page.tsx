@@ -1,10 +1,16 @@
 import { api } from '~/trpc/server';
 import type { SiteWithCreatedBy } from '~/types';
-import SiteAdminTable from '~/components/admin/SiteAdminTable';
+import SiteAdminView from '~/components/admin/SiteAdminView';
 
 export default async function SiteAdminPage() {
-  const sites = (await api.site.getAllSites({
-    includeCreatedBy: true,
-  })) as unknown as SiteWithCreatedBy[]; // TODO: Fix this type cast
-  return <SiteAdminTable sites={sites} />;
+  const [sites, activeRates] = await Promise.all([
+    api.site.getAllSites({ includeCreatedBy: true }),
+    api.site.getActiveSiteRates(),
+  ]);
+  return (
+    <SiteAdminView
+      sites={sites as unknown as SiteWithCreatedBy[]} // TODO: Fix this type cast
+      activeRates={activeRates}
+    />
+  );
 }

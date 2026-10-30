@@ -1,133 +1,111 @@
 'use client';
 
-import { useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
-import { Button, Typography } from '@mui/material';
+import { Chip } from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
-  GridToolbar,
   type GridColDef,
 } from '@mui/x-data-grid';
 
-import { dayjs } from '~/utils/dayjs';
+import { formatDate } from '~/utils/dayjs';
+import { ARSformatter } from '~/utils/helpers';
 import type { SiteWithCreatedBy } from '~/types';
-import BasicModal from '~/components/ui/BasicModal';
-import SiteAdminForm from '~/components/admin/SiteAdminForm';
+import type { SiteCardData } from '~/client/lib/sites';
+import GridToolbarMinimal, {
+  useXsColumnVisibility,
+} from '~/components/ui/GridToolbarMinimal';
 
-type Row = SiteWithCreatedBy;
-type Props = { sites: SiteWithCreatedBy[] };
+const HIDDEN_ON_XS = ['description', 'createdAt', 'createdBy'] as const;
 
-export default function SiteAdminTable({ sites }: Props) {
-  const [open, setOpen] = useState(false);
-  const [selectedSite, setSelectedSite] = useState<SiteWithCreatedBy | null>(
-    null,
-  );
+type Row = SiteWithCreatedBy & { card: SiteCardData };
+type Props = { rows: Row[]; onEdit: (site: SiteWithCreatedBy) => void };
+
+export default function SiteAdminTable({ rows, onEdit }: Props) {
+  const columnVisibility = useXsColumnVisibility(HIDDEN_ON_XS);
 
   const columns: GridColDef<Row>[] = [
-    { field: 'id', headerName: 'ID', width: 40 },
-    { field: 'name', headerName: 'Nombre', width: 150 },
-    { field: 'location', headerName: 'Dirección', width: 150 },
-    { field: 'description', headerName: 'Descripción', width: 150 },
+    { field: 'name', headerName: 'Nombre', flex: 1, minWidth: 140 },
+    { field: 'location', headerName: 'Ubicación', flex: 1, minWidth: 140 },
+    {
+      field: 'description',
+      headerName: 'Descripción',
+      flex: 1.5,
+      minWidth: 160,
+    },
+    {
+      field: 'allowsExtraHours',
+      headerName: 'Sábados',
+      minWidth: 100,
+      valueGetter: (_, row) => (row.allowsExtraHours ? 'Sí' : 'No'),
+      renderCell: ({ row }) =>
+        row.allowsExtraHours ? (
+          <Chip size="small" variant="outlined" label="Sábados" />
+        ) : null,
+    },
+    {
+      field: 'siteRate',
+      headerName: 'Tarifa del sitio',
+      type: 'number',
+      minWidth: 130,
+      valueGetter: (_, row) => row.card.siteRate?.normalRate ?? null,
+      renderCell: ({ row }) =>
+        row.card.siteRate ? (
+          ARSformatter.format(row.card.siteRate.normalRate ?? 0)
+        ) : (
+          <Chip size="small" color="warning" label="Sin tarifa" />
+        ),
+    },
+    {
+      field: 'userRates',
+      headerName: 'Tarifas por usuario',
+      type: 'number',
+      minWidth: 140,
+      valueGetter: (_, row) => row.card.userRatesCount,
+    },
     {
       field: 'createdAt',
-      headerName: 'Creado en',
-      valueGetter: (_, row) => {
-        return dayjs(row.createdAt).format('DD/MM/YYYY');
-      },
+      headerName: 'Creado el',
+      type: 'date',
+      minWidth: 110,
+      valueGetter: (_, row) => new Date(row.createdAt),
+      valueFormatter: (value: Date) => formatDate(value),
     },
     {
       field: 'createdBy',
       headerName: 'Creado por',
-      valueGetter: (_, row) => {
-        return row.CreatedBy.name;
-      },
-    },
-    {
-      field: 'allowsExtraHours',
-      headerName: 'Hrs. Extra',
-      valueFormatter: (_, row) => (row.allowsExtraHours ? 'Sí' : 'No'),
+      flex: 1,
+      minWidth: 140,
+      valueGetter: (_, row) => row.CreatedBy.name ?? row.CreatedBy.email,
     },
     {
       field: 'actions',
       type: 'actions',
       headerName: 'Editar',
-      getActions: (params) => [
+      width: 70,
+      getActions: ({ id, row }) => [
         <GridActionsCellItem
-          key={params.id}
+          key={id}
           icon={<EditIcon />}
-          size="large"
-          label="Edit"
-          onClick={() => handleEditSite(params.row)}
+          label="Editar"
+          onClick={() => onEdit(row)}
         />,
       ],
     },
   ];
 
-  const handleEditSite = (site: SiteWithCreatedBy) => {
-    setSelectedSite(site);
-    setOpen(true);
-  };
-
-  const handleCreateNewSite = () => {
-    setSelectedSite(null);
-    setOpen(true);
-  };
-
   return (
-    <>
-      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
-        Administrador de sitios
-      </Typography>
-      <div style={{ height: 400, width: '100%' }}>
-        <DataGrid
-          rows={sites}
-          columns={columns}
-          autoHeight
-          filterMode="client"
-          sortingMode="client"
-          getRowId={(row) => row.id}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 10,
-              },
-            },
-          }}
-          slots={{
-            toolbar: GridToolbar,
-          }}
-          slotProps={{
-            toolbar: {
-              showQuickFilter: true,
-              quickFilterProps: { debounceMs: 500 },
-            },
-          }}
-          getRowClassName={(params) =>
-            params.indexRelativeToCurrentPage % 2 === 0 ? 'bg-gray-100' : ''
-          }
-        />
-      </div>
-      <div className="container flex flex-col items-center justify-center">
-        <Button
-          onClick={handleCreateNewSite}
-          variant="contained"
-          color="primary"
-          size="large"
-        >
-          Crear nuevo sitio
-        </Button>
-      </div>
-      <BasicModal
-        title={selectedSite ? 'Editar Sitio' : 'Crear Sitio'}
-        dialogProps={{
-          open,
-          onClose: () => setOpen(false),
-          fullScreen: true,
-        }}
-      >
-        <SiteAdminForm site={selectedSite} setOpen={setOpen} />
-      </BasicModal>
-    </>
+    <DataGrid
+      rows={rows}
+      columns={columns}
+      autoHeight
+      getRowId={(row) => row.id}
+      pageSizeOptions={[10, 25, 50, 100]}
+      initialState={{
+        pagination: { paginationModel: { pageSize: 10 } },
+      }}
+      slots={{ toolbar: GridToolbarMinimal }}
+      {...columnVisibility}
+    />
   );
 }
