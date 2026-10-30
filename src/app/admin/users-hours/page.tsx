@@ -1,8 +1,22 @@
 import { api } from '~/trpc/server';
-import HourLogHistoryByUser from '~/components/admin/HourLogHistoryByUser';
+import UsersHoursAdminView from '~/components/admin/UsersHoursAdminView';
 
 export default async function UsersHoursAdminPage() {
-  const allHours = await api.hours.getAllHourLogs();
+  const [hourLogs, users, activeRates, sites] = await Promise.all([
+    api.hours.getAllHourLogs(),
+    api.user.getUsers(),
+    api.site.getActiveSiteRates(),
+    api.site.getAllSites(),
+  ]);
 
-  return <HourLogHistoryByUser hourLogs={allHours} />;
+  return (
+    <UsersHoursAdminView
+      hourLogs={hourLogs}
+      users={users
+        .filter((user) => user.role === 'USER')
+        .map(({ id, name, email, image }) => ({ id, name, email, image }))}
+      activeRates={activeRates}
+      sites={sites.map((site) => ({ id: site.id, label: site.name }))}
+    />
+  );
 }
