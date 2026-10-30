@@ -42,3 +42,15 @@ export function isSamePeriod(a: Period, b: Period): boolean {
 export function formatPeriod(p: Period, monthNames: readonly string[]): string {
   return `${monthNames[p.month] ?? ''} ${p.year}`;
 }
+
+/** Users may load hours for the current month, and for the previous one during the first 5 days. */
+export function loadablePeriods(
+  now: Date = new Date(),
+  timeZone: string = DEFAULT_TIME_ZONE,
+): Period[] {
+  const current = currentPeriod(now, timeZone);
+  const day = Number(
+    new Intl.DateTimeFormat('en-CA', { timeZone, day: 'numeric' }).format(now),
+  );
+  return day <= 5 ? [previousPeriod(current), current] : [current];
+}

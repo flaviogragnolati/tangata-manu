@@ -1,152 +1,155 @@
 'use client';
 
-import { LoadingButton } from '@mui/lab';
 import { useRouter } from 'next/navigation';
-import { type UseFormReturn } from 'react-hook-form';
+import { LoadingButton } from '@mui/lab';
 import {
-  Button,
+  Alert,
+  Box,
+  Card,
+  CardContent,
+  CircularProgress,
+  DialogContent,
   Divider,
-  Grid2 as Grid,
   Stack,
   Typography,
 } from '@mui/material';
 
 import { C } from '~/constants';
 import { api } from '~/trpc/react';
-import { dayjs } from '~/utils/dayjs';
-import type { SiteFull } from '~/types';
+import { ARSformatter } from '~/utils/helpers';
 import { showToast } from '~/client-utils/toast';
-import { type UserHourLogFormInput } from '~/schemas';
-import { parseConfirmationHours } from '~/server/lib/controller/hour.controller';
+import { formatPeriod, type Period } from '~/client/lib/period';
+import type { UserHourLogFormInput } from '~/schemas';
+import FormDialog, {
+  FormDialogActions,
+  FormDialogCancel,
+} from '~/client/components/ui/FormDialog';
 
 type Props = {
-  setOpen: (value: boolean) => void;
-  hoursBySite: Record<number, UserHourLogFormInput['hours']>;
-  useFormMethods: UseFormReturn<UserHourLogFormInput>;
-  sites: SiteFull[];
-  month: number;
-  year: number;
+  open: boolean;
+  onClose: () => void;
+  period: Period;
+  entries: UserHourLogFormInput['hours'];
+  onConfirmed: () => void;
 };
+
+const HOUR_TYPES = ['normal', 'saturdayPre', 'saturdayPost'] as const;
+
 export default function HourLogConfirmation({
-  hoursBySite,
-  setOpen,
-  useFormMethods,
-  sites,
-  month,
-  year,
+  open,
+  onClose,
+  period,
+  entries,
+  onConfirmed,
 }: Props) {
   const router = useRouter();
+  const input = { ...period, hours: entries };
+  const preview = api.hours.previewUserHourLog.useQuery(input, {
+    enabled: open,
+    retry: false,
+  });
 
-  const parsedHours = parseConfirmationHours(hoursBySite, sites);
+  const add = api.hours.addUserHourLog.useMutation({
+    onSuccess: () => {
+      showToast('success', 'Horas cargadas');
+      onConfirmed();
+      router.push('/user');
+    },
+    onError: (error) => showToast('error', error.message),
+  });
 
-  const { mutate, isError, error, isPending } =
-    api.hours.addUserHourLog.useMutation({
-      onSuccess: () => {
-        showToast('success', 'Horas cargadas correctamente');
-        useFormMethods.reset();
-        setOpen(false);
-        void router.push('/user');
-      },
-      onError: (error) => {
-        showToast('error', error.message);
-        setOpen(false);
-      },
-    });
-
-  const handleConfirmLoadHours = () => {
-    mutate({
-      month: month,
-      year: year,
-      hours: useFormMethods.getValues().hours,
-    });
-  };
-
-  if (isError) {
-    showToast('error', error.message);
-  }
+  const sites = preview.data ?? [];
+  const missingRate = sites.some((site) => site.missingRate);
+  const totalHours = entries.reduce((acc, entry) => acc + entry.hours, 0);
+  const totalAmount = sites.reduce((acc, site) => acc + (site.amount ?? 0), 0);
 
   return (
-    <Grid
-      size={{ xs: 12, md: 4 }}
-      gap={2}
-      alignItems="center"
-      textAlign="center"
-      direction="column"
+    <FormDialog
+      open={open}
+      title={`Confirmar horas · ${formatPeriod(period, C.months)}`}
+      onClose={onClose}
     >
-      {parsedHours.map(({ siteId, siteName, ...hours }) => {
-        const totalHours = Object.values(hours).reduce(
-          (acc, curr) => acc + curr,
-          0,
-        );
-        return (
-          <Grid size={{ xs: 12, md: 4 }} key={siteId} spacing={1}>
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="h4" gutterBottom>
-                {siteName}
+      <DialogContent dividers>
+        {preview.isPending ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress aria-label="Calculando el monto" />
+          </Box>
+        ) : preview.isError ? (
+          <Alert severity="error">{preview.error.message}</Alert>
+        ) : (
+          <Stack spacing={2}>
+            {sites.map((site) => (
+              <Card key={site.siteId} variant="outlined">
+                <CardContent>
+                  <Stack spacing={1}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {site.siteName}
+                    </Typography>
+                    {HOUR_TYPES.map((type) =>
+                      site.newHours[type] > 0 ? (
+                        <Typography key={type} variant="body2">
+                          {C.rateTypesMap[type]}:{' '}
+                          <strong>{site.newHours[type]} h</strong>
+                        </Typography>
+                      ) : null,
+                    )}
+                    {site.previousHours > 0 && (
+                      <Typography variant="body2" color="text.secondary">
+                        Ya cargado: {site.previousHours} h · Total del mes:{' '}
+                        {site.totalHours} h
+                      </Typography>
+                    )}
+                    {site.amount !== null && (
+                      <Typography variant="body2">
+                        Monto estimado del mes en este sitio:{' '}
+                        <strong>{ARSformatter.format(site.amount)}</strong>
+                      </Typography>
+                    )}
+                    {site.rateChanged && (
+                      <Alert severity="info">
+                        Las horas que ya tenía cargadas en {site.siteName} este
+                        mes se recalculan con la tarifa vigente.
+                      </Alert>
+                    )}
+                    {site.missingRate && (
+                      <Alert severity="error">
+                        {site.siteName} no tiene tarifa vigente. Avise al
+                        administrador.
+                      </Alert>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+            <Divider />
+            <Stack
+              direction="row"
+              sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}
+            >
+              <Typography>
+                Total a cargar: <strong>{totalHours} h</strong>
               </Typography>
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              {C.rateTypes.map((rate, idx) => {
-                const rateHours = hours[rate];
-                if (!rateHours) return null;
-                return (
-                  <Typography key={idx} variant="body1">
-                    {C.rateTypesMap[rate]}: <strong>{rateHours} hs</strong>
-                  </Typography>
-                );
-              })}
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-              <Typography
-                variant="h6"
-                fontWeight={'fontWeightBold'}
-                gutterBottom
-              >
-                Total {siteName}: {totalHours} hs
-              </Typography>
-            </Grid>
-          </Grid>
-        );
-      })}
-      <Divider flexItem sx={{ mr: '-1px' }} />
-      <Grid size={{ xs: 12 }}>
-        <Typography variant="h5" className="self-center">
-          Total a cargar para {dayjs().month(month).format('MMMM')} de {year}:{' '}
-          <strong>
-            {Object.values(hoursBySite).reduce((acc, curr) => {
-              return acc + curr.reduce((acc, curr) => acc + curr.hours, 0);
-            }, 0)}{' '}
-            hs{' '}
-          </strong>
-        </Typography>
-      </Grid>
-      <Grid size={{ xs: 12 }}>
-        <Stack direction="row" gap={2} className="self-center">
-          <Button
-            variant="outlined"
-            color="secondary"
-            className="mt-3 max-w-xs self-center"
-            onClick={() => setOpen(false)}
-            disabled={!useFormMethods.formState.isValid || isPending}
-            size="large"
-          >
-            Volver
-          </Button>
-          <LoadingButton
-            loading={isPending}
-            disabled={!useFormMethods.formState.isValid}
-            variant="contained"
-            color="success"
-            className="mt-3 max-w-xs self-center"
-            onClick={handleConfirmLoadHours}
-            size="large"
-          >
-            Confirmar
-          </LoadingButton>
-        </Stack>
-      </Grid>
-    </Grid>
+              {!missingRate && (
+                <Typography>
+                  Monto estimado:{' '}
+                  <strong>{ARSformatter.format(totalAmount)}</strong>
+                </Typography>
+              )}
+            </Stack>
+          </Stack>
+        )}
+      </DialogContent>
+      <FormDialogActions>
+        <FormDialogCancel label="Volver" />
+        <LoadingButton
+          variant="contained"
+          loading={add.isPending}
+          disabled={!preview.data || preview.isFetching || missingRate}
+          onClick={() => add.mutate(input)}
+        >
+          Confirmar
+        </LoadingButton>
+      </FormDialogActions>
+    </FormDialog>
   );
 }

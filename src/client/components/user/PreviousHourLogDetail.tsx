@@ -1,84 +1,81 @@
-import { keys } from 'lodash';
-import { useState } from 'react';
-import { Grid2 as Grid, Typography } from '@mui/material';
+'use client';
 
+import { useState } from 'react';
+import {
+  Button,
+  Card,
+  CardContent,
+  Divider,
+  Stack,
+  Typography,
+} from '@mui/material';
+
+import C from '~/constants';
 import type { HourLogFull } from '~/types';
-import BasicModal from '~/components/ui/BasicModal';
+import { ARSformatter } from '~/utils/helpers';
+import { type Period } from '~/client/lib/period';
 import EditHourLog from '~/components/user/EditHourLog';
-import SiteHourCard from '~/components/user/SiteHourCard';
-import { type NormalizedHourLogContent } from '~/server/lib/controller/hour.controller';
+import type { NormalizedHourLogContent } from '~/server/lib/controller/hour.controller';
 
 type Props = {
   hours: HourLogFull;
-  month: number;
-  year: number;
+  period: Period;
+  sites: { id: number; allowsExtraHours: boolean | null }[];
 };
-export default function PreviousHourLogDetail({ hours, year, month }: Props) {
-  const [open, setOpen] = useState(false);
-  const [selectedLog, setSelectedLog] =
-    useState<NormalizedHourLogContent | null>(null);
 
-  const hoursBySite = hours[year]?.[month];
+const logHours = (log: NormalizedHourLogContent) =>
+  log.normalHours + log.saturdayPreHours + log.saturdayPostHours;
+const logAmount = (log: NormalizedHourLogContent) =>
+  log.normalAmount + log.saturdayPreAmount + log.saturdayPostAmount;
 
-  const sites = keys(hoursBySite);
-
-  const totalHours = sites.reduce((acc, siteId) => {
-    const siteLog = hoursBySite?.[siteId];
-    if (!siteLog) return acc;
-    return (
-      acc +
-      siteLog.normalHours +
-      siteLog.saturdayPreHours +
-      siteLog.saturdayPostHours
-    );
-  }, 0);
-
-  if (!hoursBySite)
-    return (
-      <Typography variant="body1">No hay horas cargadas previamente</Typography>
-    );
+/** "Ya cargado" for the chosen period; only shown for loadable periods, so always editable. */
+export default function PreviousHourLogDetail({ hours, period, sites }: Props) {
+  const [selected, setSelected] = useState<NormalizedHourLogContent | null>(
+    null,
+  );
+  const logs = Object.values(hours[period.year]?.[period.month] ?? {});
+  if (!logs.length) return null;
 
   return (
-    <>
-      <Grid size={{ xs: 12 }}>
-        <Grid size={{ xs: 12 }}>
-          <Typography variant="h6" gutterBottom>
-            Horas cargadas previamente
-          </Typography>
-        </Grid>
-        {sites.map((siteId) => {
-          const siteLog = hoursBySite[siteId];
-          if (!siteLog) return null;
-          return (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={siteId}>
-              <SiteHourCard
-                siteLog={siteLog}
-                editable={true}
-                onEdit={() => {
-                  const hourLog = hours[year]![month]![siteId]!;
-                  setSelectedLog(hourLog);
-                  setOpen(true);
-                }}
-              />
-            </Grid>
-          );
-        })}
-        <Grid size={{ xs: 12 }}>
-          <Typography variant="h6" className="mt-2 text-end">
-            Total de horas: {totalHours}
-          </Typography>
-        </Grid>
-      </Grid>
-      <BasicModal
-        title="Editar horas"
-        dialogProps={{
-          open,
-          onClose: () => setOpen(false),
-          fullScreen: true,
-        }}
-      >
-        <EditHourLog hourLog={selectedLog} setOpen={setOpen} />
-      </BasicModal>
-    </>
+    <Card variant="outlined" sx={{ mb: 3 }}>
+      <CardContent>
+        <Typography variant="subtitle2" gutterBottom>
+          Ya cargado en {C.months[period.month]}
+        </Typography>
+        <Stack divider={<Divider flexItem />} spacing={1}>
+          {logs.map((log) => (
+            <Stack
+              key={log.userHourLogId}
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: 'center' }}
+            >
+              <Typography variant="body2" noWrap sx={{ flex: 1, minWidth: 0 }}>
+                {log.siteName}
+              </Typography>
+              <Typography variant="body2" sx={{ flexShrink: 0 }}>
+                {logHours(log)} h · {ARSformatter.format(logAmount(log))}
+              </Typography>
+              <Button size="small" onClick={() => setSelected(log)}>
+                Editar
+              </Button>
+            </Stack>
+          ))}
+        </Stack>
+      </CardContent>
+      {selected && (
+        <EditHourLog
+          key={selected.userHourLogId}
+          hourLog={selected}
+          period={period}
+          allowsExtraHours={
+            !!sites.find((site) => site.id === selected.siteId)
+              ?.allowsExtraHours
+          }
+          open
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </Card>
   );
 }

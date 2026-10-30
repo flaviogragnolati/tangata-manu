@@ -1,32 +1,47 @@
 'use client';
-import { groupBy, keys } from 'lodash';
+
 import { useState } from 'react';
-import { LoadingButton } from '@mui/lab';
+import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Button,
-  ButtonGroup,
-  Divider,
-  Grid2 as Grid,
-  IconButton,
-  Typography,
-} from '@mui/material';
-import {
+  FormProvider,
+  useFieldArray,
   useForm,
   useWatch,
-  useFieldArray,
-  SelectElement,
-  TextFieldElement,
-  FormContainer,
-  type UseFormReturn,
-} from 'react-hook-form-mui';
+  type Control,
+} from 'react-hook-form';
+import { SelectElement } from 'react-hook-form-mui';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  IconButton,
+  Paper,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 
 import { C } from '~/constants';
-import BasicModal from '~/components/ui/BasicModal';
-import { dayjs, getMonthName } from '~/utils/dayjs';
 import type { HourLogFull, SiteFull } from '~/types';
-import { type UserHourLogFormInput } from '~/schemas';
+import {
+  formatPeriod,
+  isSamePeriod,
+  loadablePeriods,
+  type Period,
+} from '~/client/lib/period';
+import {
+  userHourLogFormInputSchema,
+  type RateType,
+  type UserHourLogFormInput,
+} from '~/schemas';
+import PageHeader from '~/client/components/ui/PageHeader';
+import HoursField from '~/client/components/form/HoursField';
 import HourLogConfirmation from '~/components/user/HourLogConfirmation';
 import PreviousHourLogDetail from '~/components/user/PreviousHourLogDetail';
 
@@ -34,281 +49,222 @@ type Props = {
   sites: SiteFull[];
   previousHourLogs: HourLogFull;
 };
+
+type Entry = UserHourLogFormInput['hours'][number];
+const emptyEntry = () =>
+  ({ site: undefined, rate: undefined, hours: undefined }) as unknown as Entry;
+
+const rateOptions = (allowsExtraHours: boolean) =>
+  C.rateTypes
+    .filter((rate) => allowsExtraHours || rate === 'normal')
+    .map((rate) => ({ id: rate, label: C.rateTypesMap[rate] }));
+
 export default function HourLogForm({ sites, previousHourLogs }: Props) {
-  const now = dayjs();
-  const currentMonth = now.month();
-  const previousMonth = now.subtract(1, 'month').month();
-  const currentYear = now.year();
-  const previousYear = now.subtract(1, 'year').year();
-  const isWithin5Days = now.date() <= 5;
-  const isJanuary = currentMonth === 0;
-  let dateOptions: Record<number, number[]> | null = null;
-
-  if (isJanuary) {
-    if (isWithin5Days) {
-      dateOptions = {
-        [previousYear]: [previousMonth],
-        [currentYear]: [currentMonth],
-      };
-    } else {
-      dateOptions = {
-        [currentYear]: [currentMonth],
-      };
-    }
-  } else {
-    if (isWithin5Days) {
-      dateOptions = {
-        [currentYear]: [previousMonth, currentMonth],
-      };
-    } else {
-      dateOptions = {
-        [currentYear]: [currentMonth],
-      };
-    }
-  }
-
-  const siteOptions = sites.map((site) => ({
-    id: site.id,
-    label: site.name,
-  }));
-
-  const [open, setOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [hoursBySite, setHoursBySite] = useState<
-    Record<number, UserHourLogFormInput['hours']>
-  >({});
+  const [periods] = useState(() => loadablePeriods());
+  const [period, setPeriod] = useState<Period>(periods[periods.length - 1]!);
+  const [confirming, setConfirming] = useState<Entry[] | null>(null);
 
   const methods = useForm<UserHourLogFormInput>({
     mode: 'onBlur',
-    defaultValues: {
-      hours: [{ site: undefined, rate: undefined, hours: undefined }],
-    },
+    resolver: zodResolver(userHourLogFormInputSchema),
+    defaultValues: { hours: [emptyEntry()] },
   });
+  const { control, handleSubmit, setValue, getValues } = methods;
+  const { fields, append, remove } = useFieldArray({ control, name: 'hours' });
 
-  const {
-    formState: { isValid },
-  } = methods;
-  const { fields, append, remove } = useFieldArray({
-    control: methods.control,
-    name: 'hours',
-  });
-
-  const handleMonthSelect = (month: number) => {
-    setSelectedMonth(month);
-  };
-
-  const handleYearSelect = (year: number) => {
-    if (isJanuary) {
-      if (year === previousYear) {
-        setSelectedMonth(previousMonth);
-      } else {
-        setSelectedMonth(currentMonth);
-      }
-    }
-    setSelectedYear(year);
-  };
+  const siteOptions = sites.map((site) => ({ id: site.id, label: site.name }));
+  const allowsExtraHours = (siteId: unknown) =>
+    !!sites.find((site) => site.id === siteId)?.allowsExtraHours;
 
   return (
     <>
-      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
-        Cargar horas
-      </Typography>
-      {keys(dateOptions)?.length > 1 && (
-        <ButtonGroup
-          size="large"
-          className="my-2 flex justify-center"
-          color="secondary"
-        >
-          {keys(dateOptions).map((_year) => {
-            const year = parseInt(_year);
-            return (
-              <Button
-                key={year}
-                onClick={() => handleYearSelect(year)}
-                variant={selectedYear === year ? 'contained' : 'outlined'}
-              >
-                {year}
-              </Button>
-            );
-          })}
-        </ButtonGroup>
-      )}
-      {dateOptions[selectedYear]?.length && (
-        <ButtonGroup size="large" className="my-2 flex justify-center">
-          {dateOptions[selectedYear].map((month) => (
-            <Button
-              key={month}
-              onClick={() => handleMonthSelect(month)}
-              variant={selectedMonth === month ? 'contained' : 'outlined'}
-            >
-              {getMonthName(month)}
-            </Button>
-          ))}
-        </ButtonGroup>
-      )}
+      <PageHeader
+        title="Cargar horas"
+        subtitle="Elija el mes y agregue las horas de cada sitio"
+      />
+
+      <Box sx={{ mb: 3 }}>
+        {periods.length > 1 ? (
+          <ToggleButtonGroup
+            exclusive
+            color="primary"
+            value={periods.findIndex((p) => isSamePeriod(p, period))}
+            onChange={(_, index: number | null) => {
+              const next = index === null ? undefined : periods[index];
+              if (next) setPeriod(next);
+            }}
+            aria-label="Mes"
+          >
+            {periods.map((p, index) => (
+              <ToggleButton key={`${p.year}-${p.month}`} value={index}>
+                {formatPeriod(p, C.months)}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        ) : (
+          <Chip color="primary" label={formatPeriod(period, C.months)} />
+        )}
+      </Box>
 
       <PreviousHourLogDetail
         hours={previousHourLogs}
-        month={selectedMonth}
-        year={selectedYear}
+        period={period}
+        sites={sites}
       />
-      <FormContainer<UserHourLogFormInput>
-        formContext={methods}
-        onSuccess={(values) => {
-          const hoursBySite = groupBy(values.hours, 'site');
-          setHoursBySite(hoursBySite);
-          setOpen(true);
-        }}
-        FormProps={{
-          className: 'flex flex-col',
-        }}
-      >
-        <Divider className="mb-2 py-2">
-          <Typography variant="h5" className="text-center">
-            Cargar horas para: {getMonthName(selectedMonth)} {selectedYear}
-          </Typography>
-        </Divider>
-        <Grid
-          container
-          size={{ xs: 12, md: 10 }}
-          gap={2}
-          alignItems="center"
-          alignSelf="center"
-          textAlign="center"
-          direction="column"
+
+      <FormProvider {...methods}>
+        <Box
+          component="form"
+          noValidate
+          onSubmit={handleSubmit((values) => setConfirming(values.hours))}
         >
-          {fields.map((field, idx) => {
-            return (
-              <Grid
-                key={field.id}
-                container
-                size={{ xs: 12 }}
-                spacing={1}
-                alignItems="center"
-                alignSelf="center"
-                textAlign="center"
-                direction="row"
-              >
-                <Grid>
-                  <Typography variant="h6">{idx + 1}</Typography>
-                </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
-                  <SelectElement
-                    name={`hours.${idx}.site`}
-                    label="Sitio"
-                    options={siteOptions}
-                    required
-                    fullWidth
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <RateSelector
-                    control={methods.control}
-                    idx={idx}
-                    sites={sites}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextFieldElement
-                    name={`hours.${idx}.hours`}
-                    label="Cantidad"
-                    type="number"
-                    required
-                    fullWidth
-                  />
-                </Grid>
-                <Grid>
-                  <IconButton onClick={() => remove(idx)} color="error">
-                    <DeleteIcon />
-                  </IconButton>
-                </Grid>
-              </Grid>
-            );
-          })}
-          <Grid size={{ xs: 12 }}>
-            <IconButton
-              onClick={() =>
-                append({
-                  site: undefined!,
-                  rate: undefined!,
-                  hours: undefined!,
-                })
-              }
-              color="primary"
-              className="self-center"
+          <Stack spacing={2}>
+            {fields.map((field, idx) => (
+              <Card key={field.id} variant="outlined">
+                <CardContent>
+                  <Stack
+                    direction="row"
+                    sx={{
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="subtitle2">Fila {idx + 1}</Typography>
+                    <Tooltip title="Borrar fila">
+                      <span>
+                        <IconButton
+                          size="small"
+                          aria-label={`Borrar fila ${idx + 1}`}
+                          disabled={fields.length === 1}
+                          onClick={() => remove(idx)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </Stack>
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                    <SelectElement
+                      control={control}
+                      name={`hours.${idx}.site`}
+                      label="Sitio"
+                      options={siteOptions}
+                      required
+                      fullWidth
+                      onChange={(siteId) => {
+                        const rate = getValues(`hours.${idx}.rate`);
+                        if (
+                          rate &&
+                          rate !== 'normal' &&
+                          !allowsExtraHours(siteId)
+                        ) {
+                          setValue(
+                            `hours.${idx}.rate`,
+                            undefined as unknown as RateType,
+                          );
+                        }
+                      }}
+                    />
+                    <RateSelect
+                      control={control}
+                      idx={idx}
+                      allowsExtraHours={allowsExtraHours}
+                    />
+                    <HoursField<UserHourLogFormInput>
+                      control={control}
+                      name={`hours.${idx}.hours`}
+                      label="Horas"
+                      required
+                    />
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+            <Button
+              startIcon={<AddIcon />}
+              onClick={() => append(emptyEntry())}
+              sx={{ alignSelf: 'flex-start' }}
             >
-              <AddCircleIcon />
-              Agregar
-            </IconButton>
-          </Grid>
-        </Grid>
-        <Divider />
-        <LoadingButton
-          disabled={!isValid || fields.length === 0}
-          variant="contained"
-          color="success"
-          type="submit"
-          className="mt-3 max-w-xs self-center"
-          size="large"
-        >
-          Cargar horas
-        </LoadingButton>
-      </FormContainer>
-      <BasicModal
-        title="Confirmar horas"
-        dialogProps={{
-          open,
-          onClose: () => setOpen(false),
-          fullScreen: true,
-        }}
-      >
+              Agregar otra fila
+            </Button>
+          </Stack>
+
+          <Paper
+            variant="outlined"
+            sx={{
+              position: 'sticky',
+              bottom: 0,
+              mt: 3,
+              px: 2,
+              py: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              zIndex: 1,
+            }}
+          >
+            <TotalHours control={control} />
+            <Button type="submit" variant="contained">
+              Revisar y confirmar
+            </Button>
+          </Paper>
+        </Box>
+      </FormProvider>
+
+      {confirming && (
         <HourLogConfirmation
-          sites={sites}
-          setOpen={setOpen}
-          useFormMethods={methods}
-          hoursBySite={hoursBySite}
-          month={selectedMonth}
-          year={selectedYear}
+          open
+          period={period}
+          entries={confirming}
+          onClose={() => setConfirming(null)}
+          onConfirmed={() => {
+            setConfirming(null);
+            methods.reset();
+          }}
         />
-      </BasicModal>
+      )}
     </>
   );
 }
 
-function RateSelector({
+function RateSelect({
   control,
   idx,
-  sites,
+  allowsExtraHours,
 }: {
-  control: UseFormReturn<UserHourLogFormInput>['control'];
+  control: Control<UserHourLogFormInput>;
   idx: number;
-  sites: SiteFull[];
+  allowsExtraHours: (siteId: unknown) => boolean;
 }) {
-  const generateRateOptions = (allowsExtraHours: boolean) => {
-    return C.rateTypes
-      .filter((rate) => (allowsExtraHours ? true : rate === 'normal'))
-      .map((rate) => ({
-        id: rate,
-        label: C.rateTypesMap[rate],
-      }));
-  };
-
-  const values = useWatch({
-    name: 'hours',
-    control,
-  });
-  const siteAllowsExtraHours = !!sites.find(
-    (site) => site.id === values[idx]?.site,
-  )?.allowsExtraHours;
-
+  const siteId = useWatch({ control, name: `hours.${idx}.site` });
   return (
     <SelectElement
+      control={control}
       name={`hours.${idx}.rate`}
-      label="Tarifa"
-      options={generateRateOptions(siteAllowsExtraHours)}
+      label="Tipo de hora"
+      options={rateOptions(allowsExtraHours(siteId))}
       required
       fullWidth
     />
+  );
+}
+
+function TotalHours({ control }: { control: Control<UserHourLogFormInput> }) {
+  const entries = useWatch({ control, name: 'hours' });
+  const total = entries.reduce(
+    (acc, entry) => acc + (Number(entry?.hours) || 0),
+    0,
+  );
+  const sitesCount = new Set(
+    entries
+      .map((entry) => entry?.site)
+      .filter((site) => site !== undefined && site !== null),
+  ).size;
+  return (
+    <Typography sx={{ flex: 1 }}>
+      Total: <strong>{total} h</strong> en {sitesCount}{' '}
+      {sitesCount === 1 ? 'sitio' : 'sitios'}
+    </Typography>
   );
 }

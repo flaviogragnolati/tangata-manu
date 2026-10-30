@@ -3,7 +3,6 @@ import dayjs from 'dayjs';
 import type { Site, Prisma } from '@prisma/client';
 
 import { ExtraHours } from '~/types';
-import type { RateType, UserHourLogFormInput } from '~/schemas';
 
 type UserHourLogWithPayload = Prisma.UserHourLogGetPayload<{
   include: {
@@ -14,6 +13,7 @@ type UserHourLogWithPayload = Prisma.UserHourLogGetPayload<{
 
 export type NormalizedHourLogContent = {
   userHourLogId: number;
+  siteId: number;
   siteName: string;
   normalHours: number;
   saturdayPreHours: number;
@@ -21,6 +21,8 @@ export type NormalizedHourLogContent = {
   normalAmount: number;
   saturdayPreAmount: number;
   saturdayPostAmount: number;
+  /** Values of the log's Tarifa aplicada */
+  rate: { normal: number; saturdayPre: number; saturdayPost: number };
 };
 
 export type NormalizedHourLog = Record<
@@ -83,6 +85,7 @@ export function normalizeHourLogs(
 
         normalizedHourLog[year]![month]![siteId] = {
           userHourLogId: siteLog?.id,
+          siteId: site.id,
           siteName: site.name,
           normalHours,
           saturdayPostHours,
@@ -90,6 +93,11 @@ export function normalizeHourLogs(
           normalAmount,
           saturdayPreAmount,
           saturdayPostAmount,
+          rate: {
+            normal: siteLog.SiteRate.normalRate ?? 0,
+            saturdayPre: siteLog.SiteRate.saturdayPreRate ?? 0,
+            saturdayPost: siteLog.SiteRate.saturdayPostRate ?? 0,
+          },
         };
 
         //   const totalNormalHours = siteLogs.reduce(
@@ -372,29 +380,4 @@ function getExtraSalaryForUser(salaries: UserSalary[], userId: string) {
   });
 
   return result;
-}
-
-function sumHoursByRate(hours: UserHourLogFormInput['hours'], rate: RateType) {
-  return hours.reduce((acc, curr) => {
-    if (curr.rate === rate) {
-      return acc + curr.hours;
-    }
-    return acc;
-  }, 0);
-}
-
-export function parseConfirmationHours(
-  hours: Record<number, UserHourLogFormInput['hours']>,
-  sites: Site[],
-) {
-  return Object.entries(hours).map(([siteId, hours]) => {
-    const site = sites.find((site) => site.id === Number(siteId))!;
-    return {
-      siteId: site.id,
-      siteName: site.name,
-      normal: sumHoursByRate(hours, 'normal'),
-      saturdayPre: sumHoursByRate(hours, 'saturdayPre'),
-      saturdayPost: sumHoursByRate(hours, 'saturdayPost'),
-    };
-  });
 }

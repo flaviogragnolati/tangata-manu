@@ -6,6 +6,7 @@ import {
   currentPeriod,
   formatPeriod,
   isSamePeriod,
+  loadablePeriods,
   nextPeriod,
   previousPeriod,
 } from './period.ts';
@@ -72,4 +73,29 @@ await test('formatPeriod uses the given month names', () => {
   ];
 
   assert.equal(formatPeriod({ year: 2026, month: 9 }, months), 'Octubre 2026');
+});
+
+await test('loadablePeriods adds the previous month during the first 5 days', () => {
+  assert.deepEqual(loadablePeriods(new Date('2026-11-03T15:00:00Z')), [
+    { year: 2026, month: 9 },
+    { year: 2026, month: 10 },
+  ]);
+  assert.deepEqual(loadablePeriods(new Date('2026-11-06T15:00:00Z')), [
+    { year: 2026, month: 10 },
+  ]);
+});
+
+await test('loadablePeriods crosses the year in early January', () => {
+  assert.deepEqual(loadablePeriods(new Date('2027-01-02T15:00:00Z')), [
+    { year: 2026, month: 11 },
+    { year: 2027, month: 0 },
+  ]);
+});
+
+await test('loadablePeriods reads the day in Argentina, not UTC', () => {
+  // 02:00 UTC on Nov 6 is still Nov 5 in Argentina
+  assert.deepEqual(loadablePeriods(new Date('2026-11-06T02:00:00Z')), [
+    { year: 2026, month: 9 },
+    { year: 2026, month: 10 },
+  ]);
 });

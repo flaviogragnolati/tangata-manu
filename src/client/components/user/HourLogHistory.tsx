@@ -5,28 +5,28 @@ import { capitalize } from 'lodash';
 import { Divider, Grid2 as Grid, Typography } from '@mui/material';
 
 import type { HourLogFull } from '~/types';
-import BasicModal from '~/client/components/ui/BasicModal';
-import { dayjs, getMonthName } from '~/utils/dayjs';
+import { getMonthName } from '~/utils/dayjs';
+import {
+  isSamePeriod,
+  loadablePeriods,
+  type Period,
+} from '~/client/lib/period';
 import EditHourLog from '~/components/user/EditHourLog';
 import SiteHourCard from '~/components/user/SiteHourCard';
 import { type NormalizedHourLogContent } from '~/server/lib/controller/hour.controller';
 
-const isEditable = (month: number, year: number) => {
-  const now = dayjs();
-  const date = dayjs().year(year).month(month).date(now.date());
-
-  if (now.month() === month && now.year() === year) return true;
-  // Allow editing the previous month only if its within the first 5 days of current month
-  return now.month() - date.month() === 1 && date.date() <= 5 ? true : false;
-};
-
 type Props = {
   hours: HourLogFull;
+  sites: { id: number; allowsExtraHours: boolean | null }[];
 };
-export default function HourLogHistory({ hours }: Props) {
-  const [open, setOpen] = useState(false);
-  const [selectedLog, setSelectedLog] =
-    useState<NormalizedHourLogContent | null>(null);
+export default function HourLogHistory({ hours, sites }: Props) {
+  const [selected, setSelected] = useState<{
+    log: NormalizedHourLogContent;
+    period: Period;
+  } | null>(null);
+  const loadable = loadablePeriods();
+  const isEditable = (month: number, year: number) =>
+    loadable.some((period) => isSamePeriod(period, { year, month }));
 
   const years = Object.keys(hours);
 
@@ -95,11 +95,12 @@ export default function HourLogHistory({ hours }: Props) {
                             key={siteId}
                             siteLog={hours[year]![month]![siteId]!}
                             editable={isEditable(+month, +year)}
-                            onEdit={() => {
-                              const hourLog = hours[year]![month]![siteId]!;
-                              setSelectedLog(hourLog);
-                              setOpen(true);
-                            }}
+                            onEdit={() =>
+                              setSelected({
+                                log: hours[year]![month]![siteId]!,
+                                period: { year: +year, month: +month },
+                              })
+                            }
                           />
                         </Grid>
                       ))}
@@ -121,16 +122,19 @@ export default function HourLogHistory({ hours }: Props) {
           );
         })}
       </Grid>
-      <BasicModal
-        title="Editar horas"
-        dialogProps={{
-          open,
-          onClose: () => setOpen(false),
-          fullScreen: true,
-        }}
-      >
-        <EditHourLog hourLog={selectedLog} setOpen={setOpen} />
-      </BasicModal>
+      {selected && (
+        <EditHourLog
+          key={selected.log.userHourLogId}
+          hourLog={selected.log}
+          period={selected.period}
+          allowsExtraHours={
+            !!sites.find((site) => site.id === selected.log.siteId)
+              ?.allowsExtraHours
+          }
+          open
+          onClose={() => setSelected(null)}
+        />
+      )}
     </>
   );
 }

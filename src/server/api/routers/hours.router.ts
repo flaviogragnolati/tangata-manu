@@ -14,6 +14,7 @@ import {
   normalizeHourLogs,
   normalizeUserSalaries,
 } from '~/controller/hour.controller';
+import { computeAmount } from '~/server/lib/rateChanges';
 import { planUserHourLog } from '~/server/lib/userHourLogPlan';
 import {
   adminProcedure,
@@ -244,26 +245,23 @@ export const hoursRouter = createTRPCRouter({
         saturdayPreHours = 0,
         saturdayPostHours = 0,
       } = input;
-      const userHourLog = await ctx.db.userHourLog.findUniqueOrThrow({
-        where: { id: input.id },
-        include: {
-          SiteRate: true,
-        },
+      const userHourLog = await ctx.db.userHourLog.findFirst({
+        where: { id, userId: ctx.user.id },
+        include: { SiteRate: true },
       });
+      if (!userHourLog) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'No se encontró el registro de horas',
+        });
+      }
 
-      const amount =
-        normalHours * (userHourLog.SiteRate.normalRate ?? 0) +
-        saturdayPreHours * (userHourLog.SiteRate.saturdayPreRate ?? 0) +
-        saturdayPostHours * (userHourLog.SiteRate.saturdayPostRate ?? 0);
+      const hours = { normalHours, saturdayPreHours, saturdayPostHours };
+      const amount = computeAmount(hours, userHourLog.SiteRate);
 
       return await ctx.db.userHourLog.update({
         where: { id },
-        data: {
-          normalHours,
-          saturdayPreHours,
-          saturdayPostHours,
-          amount,
-        },
+        data: { ...hours, amount },
       });
     }),
 });

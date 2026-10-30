@@ -1,15 +1,28 @@
 import { z } from 'zod';
 import { C } from '~/constants';
 
-export const rateTypeEnum = z.enum(C.rateTypes);
+export const rateTypeEnum = z.enum(C.rateTypes, {
+  errorMap: () => ({ message: 'Elija el tipo de hora' }),
+});
 export type RateType = z.infer<typeof rateTypeEnum>;
 
 export const userHourLogSchema = z
   .array(
     z.object({
-      site: z.number().int().positive(),
+      site: z
+        .number({
+          required_error: 'Elija un sitio',
+          invalid_type_error: 'Elija un sitio',
+        })
+        .int()
+        .positive('Elija un sitio'),
       rate: rateTypeEnum,
-      hours: z.number().min(0),
+      hours: z
+        .number({
+          required_error: 'Ingrese la cantidad de horas',
+          invalid_type_error: 'Ingrese la cantidad de horas',
+        })
+        .positive('Ingrese una cantidad mayor a 0'),
     }),
   )
   .min(1);
@@ -27,11 +40,17 @@ export const userHourLogFormSchema = z.object({
 });
 export type UserHourLogForm = z.infer<typeof userHourLogFormSchema>;
 
+const hoursField = z
+  .number({ invalid_type_error: 'Ingrese la cantidad de horas' })
+  .min(0, 'Ingrese 0 o más horas')
+  .optional()
+  .default(0);
+
 export const updateHourLogSchema = z.object({
   id: z.number().int().positive(),
-  normalHours: z.number().optional().default(0),
-  saturdayPreHours: z.number().optional().default(0),
-  saturdayPostHours: z.number().optional().default(0),
+  normalHours: hoursField,
+  saturdayPreHours: hoursField,
+  saturdayPostHours: hoursField,
 });
 
 export type UpdateHourLog = z.infer<typeof updateHourLogSchema>;

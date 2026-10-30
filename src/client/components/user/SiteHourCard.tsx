@@ -8,8 +8,9 @@ import {
   Stack,
   IconButton,
 } from '@mui/material';
+import C from '~/constants';
 import { ARSformatter } from '~/utils/helpers';
-import { NormalizedHourLogContent } from '~/server/lib/controller/hour.controller';
+import type { NormalizedHourLogContent } from '~/server/lib/controller/hour.controller';
 
 type Props = {
   siteLog: NormalizedHourLogContent;
@@ -35,7 +36,12 @@ export default function SiteHourCard({ siteLog, editable, onEdit }: Props) {
           {editable ? (
             <Stack direction="row">
               <Typography variant="h6">{siteName}</Typography>
-              <IconButton color="secondary" className="ml-2" onClick={onEdit}>
+              <IconButton
+                color="secondary"
+                className="ml-2"
+                aria-label={`Editar horas de ${siteName}`}
+                onClick={onEdit}
+              >
                 <Edit fontSize="small" />
               </IconButton>
             </Stack>
@@ -45,19 +51,19 @@ export default function SiteHourCard({ siteLog, editable, onEdit }: Props) {
             </Typography>
           )}
           <Typography variant="body1" gutterBottom>
-            Horas normales:{' '}
+            {C.rateTypesMap.normal}:{' '}
             <strong>
               {normalHours} ({ARSformatter.format(normalAmount)})
             </strong>
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Horas sábado previo 14:00:{' '}
+            {C.rateTypesMap.saturdayPre}:{' '}
             <strong>
               {saturdayPreHours} ({ARSformatter.format(saturdayPreAmount)})
             </strong>
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Horas sábado pasadas 14:00:{' '}
+            {C.rateTypesMap.saturdayPost}:{' '}
             <strong>
               {saturdayPostHours} ({ARSformatter.format(saturdayPostAmount)})
             </strong>

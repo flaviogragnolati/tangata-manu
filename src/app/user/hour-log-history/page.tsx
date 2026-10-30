@@ -9,7 +9,10 @@ export default async function HourLogHistoryPage() {
   if (!session?.user?.id) {
     return redirect('/api/auth/signin');
   }
-  const hours = await api.hours.getUserHourLogs();
+  const [hours, sites] = await Promise.all([
+    api.hours.getUserHourLogs(),
+    api.site.getAllSites(),
+  ]);
 
-  return <HourLogHistory hours={hours} />;
+  return <HourLogHistory hours={hours} sites={sites} />;
 }

@@ -28,6 +28,7 @@ await test('summarizeSalaries is all zeros without salaries', () => {
 /** @param {Partial<import('~/server/lib/controller/hour.controller').NormalizedHourLogContent>} overrides */
 const siteLog = (overrides) => ({
   userHourLogId: 1,
+  siteId: 1,
   siteName: 'Centro',
   normalHours: 0,
   saturdayPreHours: 0,
@@ -35,6 +36,7 @@ const siteLog = (overrides) => ({
   normalAmount: 0,
   saturdayPreAmount: 0,
   saturdayPostAmount: 0,
+  rate: { normal: 0, saturdayPre: 0, saturdayPost: 0 },
   ...overrides,
 });
 
