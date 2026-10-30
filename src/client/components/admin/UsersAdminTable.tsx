@@ -60,12 +60,18 @@ export default function UsersAdminTable({
             image={row.image}
             size={32}
           />
-          <Box sx={{ minWidth: 0 }}>
+          {/* Reset the grid cell's row-height line-height so both lines fit */}
+          <Box sx={{ minWidth: 0, lineHeight: 'normal' }}>
             <Typography variant="body2" noWrap>
               {row.name ?? row.email}
             </Typography>
             {row.name && (
-              <Typography variant="caption" color="text.secondary" noWrap>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                noWrap
+              >
                 {row.email}
               </Typography>
             )}
