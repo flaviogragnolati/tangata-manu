@@ -1,5 +1,5 @@
 import { api } from '~/trpc/server';
-import SiteRateAdminTable from '~/components/admin/SiteRateAdminTable';
+import SiteRateAdminView from '~/components/admin/SiteRateAdminView';
 
 export default async function SiteRateAdminPage() {
   const rates = await api.site.getAllSiteRates();
@@ -18,6 +18,6 @@ export default async function SiteRateAdminPage() {
       label: user.name ?? user.email!,
     }));
   return (
-    <SiteRateAdminTable rates={rates} sites={siteOptions} users={userOptions} />
+    <SiteRateAdminView rates={rates} sites={siteOptions} users={userOptions} />
   );
 }

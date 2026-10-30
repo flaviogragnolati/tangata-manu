@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Divider, Grid2 as Grid, Typography } from '@mui/material';
+import { Divider, Grid2 as Grid } from '@mui/material';
 import { DatePickerElement } from 'react-hook-form-mui/date-pickers';
 import {
   useForm,
@@ -25,6 +25,7 @@ import FormContainer from '~/client/components/form/FormContainer';
 
 type Props = {
   rate?: SiteRateFull | null;
+  defaultSiteId?: number;
   siteOptions: { id: number; label: string; allowsExtraHours: boolean }[];
   userOptions: { id: string; label: string }[];
   setOpen: (value: boolean) => void;
@@ -32,13 +33,17 @@ type Props = {
 
 export default function SiteRateAdminForm({
   rate,
+  defaultSiteId,
   siteOptions,
   userOptions,
   setOpen,
 }: Props) {
   const router = useRouter();
   const isEdit = !!rate?.id;
-  const defaultValues = (rate ?? { active: true }) as SiteRate;
+  const defaultValues = (rate ?? {
+    active: true,
+    siteId: defaultSiteId,
+  }) as SiteRate;
   const methods = useForm<SiteRate>({
     mode: 'onBlur',
     resolver: zodResolver(
@@ -118,11 +123,6 @@ export default function SiteRateAdminForm({
         textAlign="center"
         marginX={{ xs: '1rem' }}
       >
-        <Grid size={{ xs: 12 }}>
-          <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
-            {isEdit ? 'Editar' : 'Crear'} tarifa
-          </Typography>
-        </Grid>
         <Grid size={{ xs: 12 }}>
           <SelectElement
             name="siteId"
@@ -210,7 +210,7 @@ export default function SiteRateAdminForm({
             loading={isCreatePending || isEditPending}
             disabled={!isValid || isCreatePending || isEditPending}
             variant="contained"
-            color="success"
+            color="primary"
             type="submit"
             size="large"
           >

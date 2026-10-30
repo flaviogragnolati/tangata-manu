@@ -1,181 +1,130 @@
 'use client';
 
-import { useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
-import { Box, Button, Typography } from '@mui/material';
+import { Chip } from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
-  GridToolbar,
   type GridColDef,
 } from '@mui/x-data-grid';
 
-import { dayjs } from '~/utils/dayjs';
+import C from '~/constants';
+import { formatDate } from '~/utils/dayjs';
+import { ARSformatter } from '~/utils/helpers';
 import { type SiteRateFull } from '~/types';
-import BasicModal from '~/components/ui/BasicModal';
-import SiteRateAdminForm from '~/components/admin/SiteRateAdminForm';
+import GridToolbarMinimal, {
+  useXsColumnVisibility,
+} from '~/components/ui/GridToolbarMinimal';
+
+const HIDDEN_ON_XS = ['id', 'createdBy', 'createdAt'] as const;
+
+const formatRate = (value: number | null) =>
+  value === null ? '—' : ARSformatter.format(value);
 
 type Row = SiteRateFull;
 type Props = {
-  rates: SiteRateFull[];
-  sites: { id: number; label: string; allowsExtraHours: boolean }[];
-  users: { id: string; label: string }[];
+  rows: SiteRateFull[];
+  onEdit: (rate: SiteRateFull) => void;
 };
 
-export default function SiteRateAdminTable({ rates, sites, users }: Props) {
-  const [openEdit, setOpenEdit] = useState(false);
-  const [selectedRate, setSelectedRate] = useState<SiteRateFull | null>(null);
+export default function SiteRateAdminTable({ rows, onEdit }: Props) {
+  const columnVisibility = useXsColumnVisibility(HIDDEN_ON_XS);
 
   const columns: GridColDef<Row>[] = [
-    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'id', headerName: 'ID', width: 70 },
     {
       field: 'siteName',
       headerName: 'Sitio',
-      width: 100,
+      flex: 1,
+      minWidth: 120,
       valueGetter: (_, row) => row.Site.name,
     },
     {
       field: 'userName',
       headerName: 'Usuario',
-      width: 100,
-      valueGetter: (_, row) => row.User?.name ?? row.User?.email,
+      flex: 1,
+      minWidth: 140,
+      valueGetter: (_, row) =>
+        row.User?.name ?? row.User?.email ?? 'Tarifa del sitio',
     },
     {
       field: 'normalRate',
-      headerName: 'Tarifa Normal',
-      width: 100,
+      headerName: 'Normal',
+      type: 'number',
+      minWidth: 110,
+      valueFormatter: (value: number | null) => formatRate(value),
     },
     {
       field: 'saturdayPreRate',
-      headerName: 'Tarifa Sábado Pre',
-      width: 100,
+      headerName: C.rateTypesMap.saturdayPre,
+      type: 'number',
+      minWidth: 120,
+      valueFormatter: (value: number | null) => formatRate(value),
     },
     {
       field: 'saturdayPostRate',
-      headerName: 'Tarifa sabado Post',
-      width: 100,
+      headerName: C.rateTypesMap.saturdayPost,
+      type: 'number',
+      minWidth: 120,
+      valueFormatter: (value: number | null) => formatRate(value),
     },
     {
       field: 'createdBy',
-      headerName: 'Creado por',
-      width: 150,
-      valueGetter: (_, row) => {
-        return row.CreatedBy.name;
-      },
+      headerName: 'Creada por',
+      flex: 1,
+      minWidth: 140,
+      valueGetter: (_, row) => row.CreatedBy.name,
     },
     {
       field: 'createdAt',
-      headerName: 'Fecha Creado',
-      width: 150,
-      valueGetter: (_, row) => {
-        return dayjs(row.createdAt).format('DD/MM/YYYY');
-      },
+      headerName: 'Creada el',
+      type: 'date',
+      minWidth: 110,
+      valueGetter: (_, row) => new Date(row.createdAt),
+      valueFormatter: (value: Date) => formatDate(value),
     },
     {
       field: 'active',
-      headerName: 'Activo',
-      valueGetter: (_, row) => {
-        return row.active ? 'Si' : 'No';
-      },
+      headerName: 'Estado',
+      minWidth: 100,
+      valueGetter: (_, row) => (row.active ? 'Activa' : 'Inactiva'),
+      renderCell: ({ row }) => (
+        <Chip
+          size="small"
+          label={row.active ? 'Activa' : 'Inactiva'}
+          color={row.active ? 'success' : 'default'}
+          variant={row.active ? 'filled' : 'outlined'}
+        />
+      ),
     },
     {
       field: 'actions',
       type: 'actions',
       headerName: 'Editar',
+      width: 70,
       getActions: (params) => [
         <GridActionsCellItem
           key={params.id}
           icon={<EditIcon />}
-          size="large"
-          label="Edit"
-          onClick={() => handleEditRate(params.row)}
+          label="Editar"
+          onClick={() => onEdit(params.row)}
         />,
       ],
     },
   ];
 
-  const handleEditRate = (rate: SiteRateFull) => {
-    setSelectedRate(rate);
-    setOpenEdit(true);
-  };
-
-  const handleCreateNewRate = () => {
-    setSelectedRate(null);
-    setOpenEdit(true);
-  };
-
   return (
-    <>
-      <Typography sx={{ typography: { xs: 'h4', md: 'h3' } }} gutterBottom>
-        Administrador de tarifas
-      </Typography>
-      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flexGrow: 1 }}>
-          <DataGrid
-            rows={rates}
-            columns={columns}
-            filterMode="client"
-            sortingMode="client"
-            getRowId={(row) => row.id}
-            pageSizeOptions={[5, 10, 25, 50, 100]}
-            initialState={{
-              pagination: {
-                paginationModel: {
-                  pageSize: 10,
-                },
-              },
-              filter: {
-                filterModel: {
-                  items: [
-                    {
-                      field: 'active',
-                      operator: 'equals',
-                      value: 'Si',
-                    },
-                  ],
-                },
-              },
-            }}
-            slots={{
-              toolbar: GridToolbar,
-            }}
-            slotProps={{
-              toolbar: {
-                showQuickFilter: true,
-                quickFilterProps: { debounceMs: 500 },
-              },
-            }}
-            getRowClassName={(params) =>
-              params.indexRelativeToCurrentPage % 2 === 0 ? 'bg-gray-100' : ''
-            }
-          />
-        </div>
-        <div className="container mt-2 flex flex-col items-center justify-center">
-          <Button
-            onClick={handleCreateNewRate}
-            variant="contained"
-            color="primary"
-            size="large"
-          >
-            Cargar nueva tarifa
-          </Button>
-        </div>
-      </Box>
-      <BasicModal
-        title={selectedRate ? 'Editar Tarifa' : 'Crear Tarifa'}
-        dialogProps={{
-          open: openEdit,
-          onClose: () => setOpenEdit(false),
-          fullScreen: true,
-        }}
-      >
-        <SiteRateAdminForm
-          siteOptions={sites}
-          userOptions={users}
-          rate={selectedRate}
-          setOpen={setOpenEdit}
-        />
-      </BasicModal>
-    </>
+    <DataGrid
+      rows={rows}
+      columns={columns}
+      autoHeight
+      getRowId={(row) => row.id}
+      pageSizeOptions={[5, 10, 25, 50, 100]}
+      initialState={{
+        pagination: { paginationModel: { pageSize: 10 } },
+      }}
+      slots={{ toolbar: GridToolbarMinimal }}
+      {...columnVisibility}
+    />
   );
 }
