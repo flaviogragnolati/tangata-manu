@@ -1,26 +1,27 @@
-import Logo from '~/client/components/ui/Logo';
-import Title from '~/client/components/ui/Title';
-import LinkButton from '~/client/components/ui/LinkButton';
-import LogoutButton from '~/client/components/ui/LogoutButton';
+import { api } from '~/trpc/server';
+import { getServerAuthSession } from '~/server/auth';
+import { currentPeriod } from '~/client/lib/period';
+import { sitesWithoutSiteRate } from '~/client/lib/siteRates';
+import { summarizeSalaries } from '~/client/lib/summaries';
+import AdminHome from '~/components/admin/AdminHome';
 
-export default async function AdminHome() {
+export default async function AdminHomePage() {
+  const period = currentPeriod();
+  const session = await getServerAuthSession();
+  const [salaries, sites, activeRates] = await Promise.all([
+    api.hours.getUsersSalaries({ year: period.year, month: period.month }),
+    api.site.getAllSites(),
+    api.site.getActiveSiteRates(),
+  ]);
+
   return (
-    <div>
-      <div className="flex justify-start py-4">
-        <LogoutButton />
-      </div>
-      <div className="flex justify-center pb-4">
-        <Logo size="sm" />
-      </div>
-      <Title>Admin Home</Title>
-      <div className="flex flex-col space-y-8">
-        <LinkButton href="/admin/site">Sitios</LinkButton>
-        <LinkButton href="/admin/site-rate"> Tarifas de Sitios</LinkButton>
-        <LinkButton href="/admin/users-hours">
-          Historial de Horas por Usuario
-        </LinkButton>
-        <LinkButton href="/admin/salaries">Salarios</LinkButton>
-      </div>
-    </div>
+    <AdminHome
+      userName={session?.user.name ?? null}
+      period={period}
+      summary={summarizeSalaries(salaries.userSalaries)}
+      sitesWithoutRate={sitesWithoutSiteRate(sites, activeRates).map(
+        ({ id, name }) => ({ id, name }),
+      )}
+    />
   );
 }

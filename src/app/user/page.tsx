@@ -1,33 +1,25 @@
 import { redirect } from 'next/navigation';
 
-import Logo from '~/client/components/ui/Logo';
-import Title from '~/client/components/ui/Title';
-import LinkButton from '~/client/components/ui/LinkButton';
-import LogoutButton from '~/client/components/ui/LogoutButton';
+import { api } from '~/trpc/server';
 import { getServerAuthSession } from '~/server/auth';
+import { currentPeriod } from '~/client/lib/period';
+import { summarizeUserPeriod } from '~/client/lib/summaries';
+import UserHome from '~/components/user/UserHome';
 
-export default async function AppHome() {
+export default async function UserHomePage() {
   const session = await getServerAuthSession();
   if (!session?.user) {
     redirect('/api/auth/signin');
   }
-  const name = session.user.name;
+  const period = currentPeriod();
+  // No `date`: the router would read its month in the server's UTC
+  const hours = await api.hours.getUserHourLogs();
 
   return (
-    <div>
-      <div className="flex justify-start py-4">
-        <LogoutButton />
-      </div>
-      <div className="flex justify-center pb-4">
-        <Logo size="sm" />
-      </div>
-      <Title>Hola, {name}</Title>
-      <div className="flex flex-col space-y-8">
-        <LinkButton href="/user/hour-log">Cargar horas</LinkButton>
-        <LinkButton href="/user/hour-log-history">
-          Ver Horas Cargadas
-        </LinkButton>
-      </div>
-    </div>
+    <UserHome
+      userName={session.user.name ?? null}
+      period={period}
+      summary={summarizeUserPeriod(hours, period)}
+    />
   );
 }
