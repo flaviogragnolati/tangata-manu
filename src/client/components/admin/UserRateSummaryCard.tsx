@@ -1,6 +1,7 @@
 'use client';
 
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import PublishedWithChangesIcon from '@mui/icons-material/PublishedWithChanges';
 import {
   Box,
   Card,
@@ -17,11 +18,13 @@ import {
 import C from '~/constants';
 import { ARSformatter } from '~/utils/helpers';
 import { formatPeriod } from '~/client/lib/period';
-import type {
-  MonthSummary,
-  RateRow,
-  UserRateSummary,
+import {
+  formatRateChange,
+  type MonthSummary,
+  type RateRow,
+  type UserRateSummary,
 } from '~/client/lib/hourLogRates';
+import type { LastRateChange } from '~/types';
 import EmptyState from '~/client/components/ui/EmptyState';
 import UserAvatar from '~/client/components/ui/UserAvatar';
 
@@ -36,6 +39,19 @@ export function OutdatedRateChip() {
         color="warning"
         icon={<WarningAmberIcon />}
         label="Tarifa desactualizada"
+      />
+    </Tooltip>
+  );
+}
+
+export function RecalculatedIcon({ change }: { change: LastRateChange }) {
+  const text = `Recalculado: ${formatRateChange(change, C.rateChangeKindsMap)}`;
+  return (
+    <Tooltip title={text}>
+      <PublishedWithChangesIcon
+        color="info"
+        fontSize="small"
+        titleAccess={text}
       />
     </Tooltip>
   );
@@ -101,6 +117,9 @@ function MonthColumn({ month }: { month: MonthSummary }) {
                   <Chip size="small" variant="outlined" label="Del sitio" />
                 )}
                 {row.isOutdated && <OutdatedRateChip />}
+                {row.lastRateChange && (
+                  <RecalculatedIcon change={row.lastRateChange} />
+                )}
               </Stack>
             </Box>
           ))}

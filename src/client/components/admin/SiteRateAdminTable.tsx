@@ -1,6 +1,7 @@
 'use client';
 
 import EditIcon from '@mui/icons-material/Edit';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import { Chip } from '@mui/material';
 import {
   DataGrid,
@@ -24,10 +25,15 @@ const formatRate = (value: number | null) =>
 type Row = SiteRateFull;
 type Props = {
   rows: SiteRateFull[];
-  onEdit: (rate: SiteRateFull) => void;
+  onChange: (rate: SiteRateFull) => void;
+  onCorrect: (rate: SiteRateFull) => void;
 };
 
-export default function SiteRateAdminTable({ rows, onEdit }: Props) {
+export default function SiteRateAdminTable({
+  rows,
+  onChange,
+  onCorrect,
+}: Props) {
   const columnVisibility = useXsColumnVisibility(HIDDEN_ON_XS);
 
   const columns: GridColDef<Row>[] = [
@@ -69,6 +75,13 @@ export default function SiteRateAdminTable({ rows, onEdit }: Props) {
       valueFormatter: (value: number | null) => formatRate(value),
     },
     {
+      field: 'logs',
+      headerName: 'Registros',
+      type: 'number',
+      minWidth: 100,
+      valueGetter: (_, row) => row._count.UserHourLog,
+    },
+    {
       field: 'createdBy',
       headerName: 'Creada por',
       flex: 1,
@@ -100,15 +113,24 @@ export default function SiteRateAdminTable({ rows, onEdit }: Props) {
     {
       field: 'actions',
       type: 'actions',
-      headerName: 'Editar',
-      width: 70,
-      getActions: (params) => [
-        <GridActionsCellItem
-          key={params.id}
-          icon={<EditIcon />}
-          label="Editar"
-          onClick={() => onEdit(params.row)}
-        />,
+      headerName: 'Acciones',
+      width: 90,
+      getActions: ({ id, row }) => [
+        row.active ? (
+          <GridActionsCellItem
+            key={id}
+            icon={<EditIcon />}
+            label="Cambiar"
+            onClick={() => onChange(row)}
+          />
+        ) : (
+          <GridActionsCellItem
+            key={id}
+            icon={<EditNoteIcon />}
+            label="Corregir"
+            onClick={() => onCorrect(row)}
+          />
+        ),
       ],
     },
   ];

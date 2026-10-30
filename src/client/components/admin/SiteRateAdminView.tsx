@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AddIcon from '@mui/icons-material/Add';
 import {
   Button,
@@ -11,7 +12,6 @@ import {
 
 import type { SiteRateFull } from '~/types';
 import { buildSiteRateCards } from '~/client/lib/siteRates';
-import BasicModal from '~/client/components/ui/BasicModal';
 import EmptyState from '~/client/components/ui/EmptyState';
 import PageHeader from '~/client/components/ui/PageHeader';
 import ViewToggle, { type ViewMode } from '~/client/components/ui/ViewToggle';
@@ -19,28 +19,47 @@ import FilterBar from '~/client/components/filters/FilterBar';
 import UserFilter from '~/client/components/filters/UserFilter';
 import SiteChipsFilter from '~/client/components/filters/SiteChipsFilter';
 import SiteRateCard from '~/components/admin/SiteRateCard';
-import SiteRateAdminForm from '~/components/admin/SiteRateAdminForm';
 import SiteRateAdminTable from '~/components/admin/SiteRateAdminTable';
+import RateChangeDialog, {
+  type RateDialogMode,
+} from '~/components/admin/RateChangeDialog';
 
 type Status = 'active' | 'all';
-type ModalState = {
-  open: boolean;
-  rate: SiteRateFull | null;
-  defaultSiteId?: number;
-};
 
 type Props = {
   rates: SiteRateFull[];
   sites: { id: number; label: string; allowsExtraHours: boolean }[];
   users: { id: string; label: string }[];
+  initialSiteId?: number;
+  /** Opens "Nueva tarifa" on load (`?nueva=1`). */
+  openNew?: boolean;
 };
 
-export default function SiteRateAdminView({ rates, sites, users }: Props) {
+const dialogKey = (mode: RateDialogMode | null) =>
+  !mode
+    ? 'closed'
+    : mode.kind === 'new'
+      ? `new-${mode.siteId ?? ''}`
+      : `${mode.kind}-${mode.rate.id}`;
+
+export default function SiteRateAdminView({
+  rates,
+  sites,
+  users,
+  initialSiteId,
+  openNew = false,
+}: Props) {
+  const router = useRouter();
   const [view, setView] = useState<ViewMode>('cards');
-  const [siteIds, setSiteIds] = useState<number[]>([]);
+  const [siteIds, setSiteIds] = useState<number[]>(
+    initialSiteId ? [initialSiteId] : [],
+  );
   const [userId, setUserId] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('active');
-  const [modal, setModal] = useState<ModalState>({ open: false, rate: null });
+  const [dialog, setDialog] = useState<RateDialogMode | null>(
+    openNew ? { kind: 'new', siteId: initialSiteId } : null,
+  );
+  const [fromQuery, setFromQuery] = useState(openNew);
 
   const cards = useMemo(() => buildSiteRateCards(sites, rates), [sites, rates]);
 
@@ -66,11 +85,25 @@ export default function SiteRateAdminView({ rates, sites, users }: Props) {
     setStatus('active');
   };
 
-  const openCreate = (defaultSiteId?: number) =>
-    setModal({ open: true, rate: null, defaultSiteId });
-  const openEdit = (rate: SiteRateFull) => setModal({ open: true, rate });
-  const setModalOpen = (open: boolean) =>
-    setModal((current) => ({ ...current, open }));
+  const openCreate = (siteId?: number) => setDialog({ kind: 'new', siteId });
+  const openChange = (rate: SiteRateFull) =>
+    setDialog({ kind: 'change', rate });
+  const openCorrect = (rate: SiteRateFull) =>
+    setDialog({ kind: 'correct', rate });
+  const openRemove = (rate: SiteRateFull) =>
+    setDialog({ kind: 'removeUserRate', rate });
+  const closeDialog = () => {
+    setDialog(null);
+    // Drop `nueva` so a refresh doesn't reopen the dialog
+    if (fromQuery) {
+      setFromQuery(false);
+      router.replace(
+        initialSiteId
+          ? `/admin/site-rate?siteId=${initialSiteId}`
+          : '/admin/site-rate',
+      );
+    }
+  };
 
   return (
     <>
@@ -116,7 +149,8 @@ export default function SiteRateAdminView({ rates, sites, users }: Props) {
                 <SiteRateCard
                   data={card}
                   highlightUserId={userId}
-                  onEdit={openEdit}
+                  onChange={openChange}
+                  onRemove={openRemove}
                   onCreate={openCreate}
                 />
               </Grid>
@@ -126,27 +160,22 @@ export default function SiteRateAdminView({ rates, sites, users }: Props) {
           <EmptyState title="No hay sitios que coincidan con los filtros" />
         )
       ) : (
-        <SiteRateAdminTable rows={visibleRows} onEdit={openEdit} />
+        <SiteRateAdminTable
+          rows={visibleRows}
+          onChange={openChange}
+          onCorrect={openCorrect}
+        />
       )}
 
-      <BasicModal
-        title={modal.rate ? 'Editar tarifa' : 'Nueva tarifa'}
-        dialogProps={{
-          open: modal.open,
-          onClose: () => setModalOpen(false),
-          fullScreen: true,
-        }}
-      >
-        <SiteRateAdminForm
-          // defaultValues are read on mount only; remount per rate or site
-          key={modal.rate?.id ?? `new-${modal.defaultSiteId ?? ''}`}
-          siteOptions={sites}
-          userOptions={users}
-          rate={modal.rate}
-          defaultSiteId={modal.defaultSiteId}
-          setOpen={setModalOpen}
-        />
-      </BasicModal>
+      <RateChangeDialog
+        // defaultValues are read on mount only; remount per operation
+        key={dialogKey(dialog)}
+        mode={dialog}
+        onClose={closeDialog}
+        rates={rates}
+        sites={sites}
+        users={users}
+      />
     </>
   );
 }

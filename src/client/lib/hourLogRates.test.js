@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildUserRateSummaries } from './hourLogRates.ts';
+import { ARSformatter } from '../../utils/helpers.ts';
+import {
+  buildUserRateSummaries,
+  formatRateChange,
+  readLastRateChange,
+} from './hourLogRates.ts';
 
 /** @param {Partial<import('./siteRates.ts').RateLike>} overrides */
 const rate = (overrides) => ({
@@ -190,4 +195,66 @@ await test('a user with logs but missing from the list is still shown', () => {
       ['ana', 'Ana'],
     ],
   );
+});
+
+/** @type {import('../../types/hours.type.ts').LastRateChange} */
+const validChange = {
+  kind: 'correction',
+  fromSiteRateId: 1,
+  toSiteRateId: 1,
+  fromAmount: 400000,
+  toAmount: 480000,
+  byUserId: 'admin',
+  byUserName: 'Flavio',
+  at: '2026-10-29T15:00:00.000Z',
+};
+
+await test('readLastRateChange accepts only a complete lastRateChange', () => {
+  assert.equal(readLastRateChange({}), null);
+  assert.equal(readLastRateChange(null), null);
+  assert.deepEqual(
+    readLastRateChange({ lastRateChange: validChange }),
+    validChange,
+  );
+  assert.equal(
+    readLastRateChange({ lastRateChange: { ...validChange, kind: 'other' } }),
+    null,
+  );
+  assert.equal(
+    readLastRateChange({ lastRateChange: { ...validChange, toAmount: '1' } }),
+    null,
+  );
+});
+
+await test('formatRateChange shows kind, amounts, author and AR date', () => {
+  const kinds = {
+    correction: 'Corrección de tarifa',
+    retroactive: 'Actualización retroactiva',
+    removal: 'Baja de tarifa por usuario',
+    hourLoad: 'Carga de horas con la tarifa vigente',
+  };
+  const text = formatRateChange(validChange, kinds);
+  const ars = (/** @type {number} */ n) => ARSformatter.format(n);
+
+  assert.equal(
+    text,
+    `Corrección de tarifa · ${ars(400000)} → ${ars(480000)} · por Flavio el 29/10/2026`,
+  );
+  // 01:00 UTC on the 30th is still the 29th in Argentina
+  assert.match(
+    formatRateChange({ ...validChange, at: '2026-10-30T01:00:00.000Z' }, kinds),
+    /el 29\/10\/2026$/,
+  );
+});
+
+await test('summary rows carry the last rate change', () => {
+  const siteRate = rate({ id: 1 });
+  const [summary] = buildUserRateSummaries({
+    hourLogs: [log(siteRate, { metadata: { lastRateChange: validChange } })],
+    users: [ana],
+    activeRates: [siteRate],
+    period: october,
+  });
+
+  assert.deepEqual(summary?.months[1].rows[0]?.lastRateChange, validChange);
 });

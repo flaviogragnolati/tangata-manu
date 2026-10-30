@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
   Alert,
   Box,
@@ -13,6 +15,8 @@ import {
   Chip,
   Divider,
   IconButton,
+  Menu,
+  MenuItem,
   Stack,
   Tooltip,
   Typography,
@@ -32,16 +36,25 @@ const formatRate = (value: number | null) =>
 type Props = {
   data: SiteRateCardData<SiteRateFull>;
   highlightUserId?: string | null;
-  onEdit: (rate: SiteRateFull) => void;
+  onChange: (rate: SiteRateFull) => void;
+  onRemove: (rate: SiteRateFull) => void;
   onCreate: (siteId: number) => void;
 };
+
+const logsCount = (rate: SiteRateFull) =>
+  `${rate._count.UserHourLog} ${rate._count.UserHourLog === 1 ? 'registro' : 'registros'}`;
 
 export default function SiteRateCard({
   data,
   highlightUserId,
-  onEdit,
+  onChange,
+  onRemove,
   onCreate,
 }: Props) {
+  const [menu, setMenu] = useState<{
+    anchor: HTMLElement;
+    rate: SiteRateFull;
+  } | null>(null);
   const { siteRate, userRates, allowsExtraHours } = data;
   const rateTypes = allowsExtraHours
     ? C.rateTypes
@@ -53,7 +66,7 @@ export default function SiteRateCard({
         title={data.siteName}
         subheader={
           siteRate
-            ? `Vigente desde ${formatDate(siteRate.createdAt)}`
+            ? `Vigente desde ${formatDate(siteRate.createdAt)} · ${logsCount(siteRate)}`
             : undefined
         }
         action={
@@ -140,22 +153,34 @@ export default function SiteRateCard({
                     label={`${normalDiffPct > 0 ? '+' : ''}${normalDiffPct}%`}
                   />
                 )}
-                <Tooltip title="Editar">
+                <Tooltip title="Cambiar">
                   <IconButton
                     size="small"
-                    aria-label={`Editar tarifa de ${rate.User?.name ?? rate.User?.email ?? 'usuario'}`}
-                    onClick={() => onEdit(rate)}
+                    aria-label={`Cambiar tarifa de ${rate.User?.name ?? rate.User?.email ?? 'usuario'}`}
+                    onClick={() => onChange(rate)}
                   >
                     <EditIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
+                <IconButton
+                  size="small"
+                  aria-label={`Más acciones para ${rate.User?.name ?? rate.User?.email ?? 'usuario'}`}
+                  aria-haspopup="menu"
+                  onClick={(event) =>
+                    setMenu({ anchor: event.currentTarget, rate })
+                  }
+                >
+                  <MoreVertIcon fontSize="small" />
+                </IconButton>
               </Stack>
             ))}
           </Stack>
         )}
       </CardContent>
       <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
-        {siteRate && <Button onClick={() => onEdit(siteRate)}>Editar</Button>}
+        {siteRate && (
+          <Button onClick={() => onChange(siteRate)}>Cambiar tarifa</Button>
+        )}
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -164,6 +189,16 @@ export default function SiteRateCard({
           Nueva tarifa
         </Button>
       </CardActions>
+      <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}>
+        <MenuItem
+          onClick={() => {
+            if (menu) onRemove(menu.rate);
+            setMenu(null);
+          }}
+        >
+          Quitar tarifa por usuario
+        </MenuItem>
+      </Menu>
     </Card>
   );
 }

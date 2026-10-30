@@ -1,7 +1,10 @@
 import { api } from '~/trpc/server';
 import SiteRateAdminView from '~/components/admin/SiteRateAdminView';
 
-export default async function SiteRateAdminPage() {
+type Props = { searchParams: { siteId?: string; nueva?: string } };
+
+export default async function SiteRateAdminPage({ searchParams }: Props) {
+  const siteId = Number(searchParams.siteId);
   const rates = await api.site.getAllSiteRates();
   const sites = await api.site.getAllSites();
   const users = await api.user.getUsers();
@@ -18,6 +21,14 @@ export default async function SiteRateAdminPage() {
       label: user.name ?? user.email!,
     }));
   return (
-    <SiteRateAdminView rates={rates} sites={siteOptions} users={userOptions} />
+    <SiteRateAdminView
+      rates={rates}
+      sites={siteOptions}
+      users={userOptions}
+      initialSiteId={
+        sites.some((site) => site.id === siteId) ? siteId : undefined
+      }
+      openNew={searchParams.nueva === '1'}
+    />
   );
 }

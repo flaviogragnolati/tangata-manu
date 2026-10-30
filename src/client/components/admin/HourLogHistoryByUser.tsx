@@ -8,6 +8,8 @@ import C from '~/constants';
 import { formatDate } from '~/utils/dayjs';
 import { ARSformatter } from '~/utils/helpers';
 import type { HourLogWithUserFull } from '~/types';
+import { readLastRateChange } from '~/client/lib/hourLogRates';
+import { RecalculatedIcon } from '~/components/admin/UserRateSummaryCard';
 import GridToolbarMinimal, {
   useXsColumnVisibility,
 } from '~/components/ui/GridToolbarMinimal';
@@ -97,29 +99,33 @@ export default function HourLogHistoryByUser({ hourLogs, outdatedIds }: Props) {
       minWidth: 150,
       valueGetter: (_, row) =>
         row.SiteRate.userId ? 'Por usuario' : 'Del sitio',
-      renderCell: ({ row, value }) => (
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{ alignItems: 'center', height: '100%' }}
-        >
-          <Chip
-            size="small"
-            label={value as string}
-            color={row.SiteRate.userId ? 'secondary' : 'default'}
-            variant={row.SiteRate.userId ? 'filled' : 'outlined'}
-          />
-          {outdatedIds?.has(row.id) && (
-            <Tooltip title="Tarifa desactualizada">
-              <WarningAmberIcon
-                color="warning"
-                fontSize="small"
-                titleAccess="Tarifa desactualizada"
-              />
-            </Tooltip>
-          )}
-        </Stack>
-      ),
+      renderCell: ({ row, value }) => {
+        const lastRateChange = readLastRateChange(row.metadata);
+        return (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ alignItems: 'center', height: '100%' }}
+          >
+            <Chip
+              size="small"
+              label={value as string}
+              color={row.SiteRate.userId ? 'secondary' : 'default'}
+              variant={row.SiteRate.userId ? 'filled' : 'outlined'}
+            />
+            {outdatedIds?.has(row.id) && (
+              <Tooltip title="Tarifa desactualizada">
+                <WarningAmberIcon
+                  color="warning"
+                  fontSize="small"
+                  titleAccess="Tarifa desactualizada"
+                />
+              </Tooltip>
+            )}
+            {lastRateChange && <RecalculatedIcon change={lastRateChange} />}
+          </Stack>
+        );
+      },
     },
     {
       field: 'amount',

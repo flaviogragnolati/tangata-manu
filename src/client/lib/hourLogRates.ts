@@ -1,4 +1,11 @@
-import { isSamePeriod, previousPeriod, type Period } from './period.ts';
+import type { LastRateChange, RateChangeKind } from '../../types/hours.type.ts';
+import { ARSformatter } from '../../utils/helpers.ts';
+import {
+  DEFAULT_TIME_ZONE,
+  isSamePeriod,
+  previousPeriod,
+  type Period,
+} from './period.ts';
 import { resolveApplicableRate, type RateLike } from './siteRates.ts';
 
 type Person = {
@@ -19,6 +26,7 @@ export type HourLogLike = {
   amount: number;
   SiteRate: RateLike & { Site: { id: number; name: string } };
   User?: Person | null;
+  metadata?: unknown;
 };
 
 export type RateRow = {
@@ -35,6 +43,7 @@ export type RateRow = {
   appliedRate: { normal: number; saturdayPre: number; saturdayPost: number };
   scope: 'site' | 'user';
   isOutdated: boolean;
+  lastRateChange: LastRateChange | null;
 };
 
 export type MonthSummary = {
@@ -61,6 +70,51 @@ export function isOutdatedLog(log: HourLogLike, activeRates: RateLike[]) {
   );
 }
 
+const RATE_CHANGE_KINDS: readonly RateChangeKind[] = [
+  'correction',
+  'retroactive',
+  'removal',
+  'hourLoad',
+];
+
+/** `UserHourLog.metadata` is free JSON: trust it only when it has the full shape. */
+export function readLastRateChange(metadata: unknown): LastRateChange | null {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const change = (metadata as { lastRateChange?: unknown }).lastRateChange;
+  if (!change || typeof change !== 'object') return null;
+  const c = change as Record<string, unknown>;
+  const isNumber = (key: string) => typeof c[key] === 'number';
+  if (
+    !RATE_CHANGE_KINDS.includes(c.kind as RateChangeKind) ||
+    !isNumber('fromSiteRateId') ||
+    !isNumber('toSiteRateId') ||
+    !isNumber('fromAmount') ||
+    !isNumber('toAmount') ||
+    typeof c.byUserId !== 'string' ||
+    (c.byUserName !== null && typeof c.byUserName !== 'string') ||
+    typeof c.at !== 'string'
+  ) {
+    return null;
+  }
+  return change as LastRateChange;
+}
+
+const changeDate = new Intl.DateTimeFormat('es-AR', {
+  timeZone: DEFAULT_TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
+/** "Corrección de tarifa · $400.000 → $480.000 · por Flavio el 29/10/2026" */
+export function formatRateChange(
+  change: LastRateChange,
+  kinds: Record<RateChangeKind, string>,
+): string {
+  const by = change.byUserName ? ` por ${change.byUserName}` : '';
+  return `${kinds[change.kind]} · ${ARSformatter.format(change.fromAmount)} → ${ARSformatter.format(change.toAmount)} ·${by} el ${changeDate.format(new Date(change.at))}`;
+}
+
 function toRow(log: HourLogLike, activeRates: RateLike[]): RateRow {
   const normal = log.normalHours ?? 0;
   const saturdayPre = log.saturdayPreHours ?? 0;
@@ -83,6 +137,7 @@ function toRow(log: HourLogLike, activeRates: RateLike[]): RateRow {
     },
     scope: log.SiteRate.userId ? 'user' : 'site',
     isOutdated: isOutdatedLog(log, activeRates),
+    lastRateChange: readLastRateChange(log.metadata),
   };
 }
 
