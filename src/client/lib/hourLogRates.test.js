@@ -258,3 +258,42 @@ await test('summary rows carry the last rate change', () => {
 
   assert.deepEqual(summary?.months[1].rows[0]?.lastRateChange, validChange);
 });
+
+await test('a user dado de baja shows up only with logs, flagged, and never outdated', () => {
+  const siteRate = rate({ id: 1 });
+  const inactiveUserRate = rate({ id: 2, userId: 'carla', active: false });
+  const carla = {
+    name: 'Carla',
+    email: 'carla@x.com',
+    image: null,
+    deactivatedAt: new Date('2026-10-15'),
+  };
+  /** @param {import('./hourLogRates.ts').HourLogLike[]} hourLogs */
+  const build = (hourLogs) =>
+    buildUserRateSummaries({
+      hourLogs,
+      users: [ana],
+      activeRates: [siteRate],
+      period: october,
+    });
+
+  assert.deepEqual(
+    build([]).map((s) => s.userId),
+    ['ana'],
+  );
+
+  const summaries = build([
+    log(inactiveUserRate, { id: 5, userId: 'carla', User: carla }),
+    log(inactiveUserRate, {
+      id: 6,
+      userId: 'ana',
+      User: { ...carla, name: 'Ana', deactivatedAt: null },
+    }),
+  ]);
+  const carlaSummary = summaries.find((s) => s.userId === 'carla');
+  assert.equal(carlaSummary?.deactivated, true);
+  assert.equal(carlaSummary?.months[1].rows[0]?.isOutdated, false);
+  const anaSummary = summaries.find((s) => s.userId === 'ana');
+  assert.equal(anaSummary?.deactivated, false);
+  assert.equal(anaSummary?.months[1].rows[0]?.isOutdated, true);
+});

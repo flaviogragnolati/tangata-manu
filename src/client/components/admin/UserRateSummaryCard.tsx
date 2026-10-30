@@ -147,7 +147,31 @@ export default function UserRateSummaryCard({
             image={summary.image}
           />
         }
-        title={summary.name ?? summary.email}
+        title={
+          summary.deactivated ? (
+            // Spans: the header renders the title inside a <span>
+            <Stack
+              component="span"
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: 'center' }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  minWidth: 0,
+                }}
+              >
+                {summary.name ?? summary.email}
+              </Box>
+              <Chip component="span" size="small" label="Dado de baja" />
+            </Stack>
+          ) : (
+            (summary.name ?? summary.email)
+          )
+        }
         subheader={summary.name ? summary.email : undefined}
         slotProps={{
           title: { noWrap: true },

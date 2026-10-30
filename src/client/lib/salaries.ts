@@ -4,6 +4,7 @@ import {
   previousPeriod,
   type Period,
 } from './period.ts';
+import { resolveApplicableRate, type RateLike } from './siteRates.ts';
 
 type RateValuesLike = {
   normalRate: number | null;
@@ -92,4 +93,26 @@ export function latestRateByUserSite(
     }
   }
   return new Map([...latest].map(([key, { rate }]) => [key, rate]));
+}
+
+/**
+ * Rate that values a user's Aguinaldo in a site: the Tarifa aplicable, except
+ * for a user dado de baja, whose user rates the baja deactivated; their newest
+ * log's Tarifa aplicada stands in for it.
+ */
+export function extraSalaryRate({
+  userId,
+  siteId,
+  lastRate,
+  deactivatedUserIds,
+  activeRates,
+}: {
+  userId: string;
+  siteId: number;
+  lastRate: RateValuesLike | null;
+  deactivatedUserIds: Set<string>;
+  activeRates: RateLike[];
+}): RateValues {
+  if (deactivatedUserIds.has(userId) && lastRate) return rateValues(lastRate);
+  return rateValues(resolveApplicableRate(activeRates, siteId, userId));
 }

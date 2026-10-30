@@ -57,7 +57,9 @@ export default function SiteRateAdminTable({
       flex: 1,
       minWidth: 140,
       valueGetter: (_, row) =>
-        row.User?.name ?? row.User?.email ?? 'Tarifa del sitio',
+        row.User
+          ? `${row.User.name ?? row.User.email}${row.User.deactivatedAt ? ' · dado de baja' : ''}`
+          : 'Tarifa del sitio',
     },
     {
       field: 'normalRate',

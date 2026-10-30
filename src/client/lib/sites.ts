@@ -58,7 +58,7 @@ export function buildSiteCards(
 }
 
 /** Lowercase without diacritics, so "medico" finds "Médico". */
-const normalize = (text: string) =>
+export const normalize = (text: string) =>
   text
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')

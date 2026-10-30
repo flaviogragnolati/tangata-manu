@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Box, Button, Card, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, Typography } from '@mui/material';
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined';
 
 import C from '~/constants';
@@ -17,9 +17,18 @@ type Props = {
   userName: string | null;
   period: Period;
   summary: ReturnType<typeof summarizeUserPeriod>;
+  deactivated?: boolean;
 };
 
-export default function UserHome({ userName, period, summary }: Props) {
+const DEACTIVATED_NOTICE =
+  'Su usuario está dado de baja. No puede cargar horas. Consulte al administrador.';
+
+export default function UserHome({
+  userName,
+  period,
+  summary,
+  deactivated = false,
+}: Props) {
   const hasHours = summary.sitesCount > 0;
 
   return (
@@ -29,6 +38,11 @@ export default function UserHome({ userName, period, summary }: Props) {
         subtitle={formatPeriod(period, C.months)}
       />
       <Box sx={{ mb: 4 }}>
+        {deactivated && hasHours && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {DEACTIVATED_NOTICE}
+          </Alert>
+        )}
         {hasHours ? (
           <StatCard
             label="Este mes"
@@ -43,13 +57,17 @@ export default function UserHome({ userName, period, summary }: Props) {
               dense
               title="Todavía no cargó horas este mes"
               action={
-                <Button
-                  component={Link}
-                  href="/user/hour-log"
-                  variant="contained"
-                >
-                  Cargar horas
-                </Button>
+                deactivated ? (
+                  <Alert severity="info">{DEACTIVATED_NOTICE}</Alert>
+                ) : (
+                  <Button
+                    component={Link}
+                    href="/user/hour-log"
+                    variant="contained"
+                  >
+                    Cargar horas
+                  </Button>
+                )
               }
             />
           </Card>

@@ -19,7 +19,7 @@ import {
 import C from '~/constants';
 import { dayjs } from '~/utils/dayjs';
 import { ARSformatter } from '~/utils/helpers';
-import { amountDeltas } from '~/client/lib/salaries';
+import { amountDeltas, extraSalaryRate } from '~/client/lib/salaries';
 import { currentPeriod, formatPeriod, type Period } from '~/client/lib/period';
 import StatCard from '~/client/components/ui/StatCard';
 import EmptyState from '~/client/components/ui/EmptyState';
@@ -28,26 +28,16 @@ import FilterBar from '~/client/components/filters/FilterBar';
 import MonthStepper from '~/client/components/filters/MonthStepper';
 import UserSalaryCard from '~/components/admin/UserSalaryCard';
 import SiteSalaryCard from '~/components/admin/SiteSalaryCard';
+import UserStatusDialog, {
+  type UserStatusAction,
+} from '~/components/admin/UserStatusDialog';
 import type { GroupedSalaries, UserSalariesWithExtraSalary } from '~/types';
 import { isFirstHalf } from '~/server/lib/controller/hour.controller';
-
-function getActiveRate(userId: string, siteId: string, rates: SiteRate[]) {
-  const rate =
-    rates.find(
-      (rate) => rate.userId === userId && rate.siteId === parseInt(siteId),
-    ) ?? rates.find((rate) => rate.siteId === parseInt(siteId) && !rate.userId);
-
-  return {
-    ...(rate ?? {}),
-    normalRate: rate?.normalRate ?? 0,
-    saturdayPreRate: rate?.saturdayPreRate ?? 0,
-    saturdayPostRate: rate?.saturdayPostRate ?? 0,
-  };
-}
 
 function filterSalaries(
   salaries: UserSalariesWithExtraSalary,
   rates: SiteRate[],
+  deactivatedUserIds: Set<string>,
   _filter?: Partial<Filter>,
 ) {
   const filter = {
@@ -89,7 +79,13 @@ function filterSalaries(
         extraSalaries
           .filter((extraSalary) => extraSalary.year === filter.year)
           .forEach((extraSalary) => {
-            const rate = getActiveRate(userId, extraSalary.siteId, rates);
+            const rate = extraSalaryRate({
+              userId,
+              siteId: Number(extraSalary.siteId),
+              lastRate: extraSalary.lastRate,
+              deactivatedUserIds,
+              activeRates: rates,
+            });
             const extra = extraSalary[half];
             const normalAmount = extra.normalHours * rate.normalRate;
             const saturdayPreAmount =
@@ -129,7 +125,13 @@ function filterSalaries(
         extraSalaries
           .filter((extraSalary) => extraSalary.year === filter.year)
           .forEach((extraSalary) => {
-            const rate = getActiveRate(extraSalary.userId, siteId, rates);
+            const rate = extraSalaryRate({
+              userId: extraSalary.userId,
+              siteId: Number(siteId),
+              lastRate: extraSalary.lastRate,
+              deactivatedUserIds,
+              activeRates: rates,
+            });
             const extra = extraSalary[half];
             const normalAmount = extra.normalHours * rate.normalRate;
             const saturdayPreAmount =
@@ -181,7 +183,18 @@ export default function SalariesDashboard({
   const [period, setPeriod] = useState<Period>(today);
   const [groupBy, setGroupBy] = useState<GroupBy>('groupByUser');
 
+  const [statusAction, setStatusAction] = useState<UserStatusAction | null>(
+    null,
+  );
+
   const usersById = useMemo(() => _.keyBy(users, 'id'), [users]);
+  const deactivatedUserIds = useMemo(
+    () =>
+      new Set(
+        users.filter((user) => user.deactivatedAt).map((user) => user.id),
+      ),
+    [users],
+  );
   const sitesById = useMemo(() => _.keyBy(sites, 'id'), [sites]);
 
   const {
@@ -193,12 +206,12 @@ export default function SalariesDashboard({
     isEmpty,
   } = useMemo(
     () =>
-      filterSalaries(salaries, rates, {
+      filterSalaries(salaries, rates, deactivatedUserIds, {
         groupBy,
         year: period.year,
         month: period.month,
       }),
-    [salaries, rates, groupBy, period],
+    [salaries, rates, deactivatedUserIds, groupBy, period],
   );
 
   const byUser = groupBy === 'groupByUser';
@@ -296,6 +309,13 @@ export default function SalariesDashboard({
               data={filteredSalaries}
               extraSalaries={extraSalaryByUser}
               deltas={deltas.byKey}
+              onDeactivate={(user) =>
+                setStatusAction({
+                  kind: 'deactivate',
+                  userId: user.id,
+                  label: user.name ?? user.email ?? 'Usuario',
+                })
+              }
             />
           ) : (
             <SalaryBySite
@@ -307,6 +327,11 @@ export default function SalariesDashboard({
           )}
         </Grid>
       )}
+      <UserStatusDialog
+        key={statusAction?.userId ?? 'closed'}
+        action={statusAction}
+        onClose={() => setStatusAction(null)}
+      />
     </>
   );
 }
@@ -316,11 +341,13 @@ function SalaryByUser({
   usersById,
   extraSalaries,
   deltas,
+  onDeactivate,
 }: {
   data: GroupedSalaries;
   usersById: Record<string, User>;
   extraSalaries: Record<string, number>; // {[userId: string]: number}
   deltas: Record<string, number | null>;
+  onDeactivate: (user: User) => void;
 }) {
   const userIds = _.keys(data);
 
@@ -337,6 +364,7 @@ function SalaryByUser({
               salary={filteredSalaries}
               extraSalary={extraSalaries[userId] ?? 0}
               delta={deltas[userId]}
+              onDeactivate={() => onDeactivate(user)}
             />
           </Grid>
         );

@@ -20,6 +20,7 @@ export default async function UserHomePage() {
       userName={session.user.name ?? null}
       period={period}
       summary={summarizeUserPeriod(hours, period)}
+      deactivated={!!session.user.deactivatedAt}
     />
   );
 }

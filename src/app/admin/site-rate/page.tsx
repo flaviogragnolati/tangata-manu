@@ -15,7 +15,7 @@ export default async function SiteRateAdminPage({ searchParams }: Props) {
     allowsExtraHours: !!site.allowsExtraHours,
   }));
   const userOptions = users
-    .filter((user) => user.role === 'USER')
+    .filter((user) => user.role === 'USER' && !user.deactivatedAt)
     .map((user) => ({
       id: user.id,
       label: user.name ?? user.email!,

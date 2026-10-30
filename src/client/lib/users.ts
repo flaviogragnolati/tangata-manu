@@ -1,4 +1,5 @@
 import { comparePeriods, type Period } from './period.ts';
+import { normalize } from './sites.ts';
 
 export function latestPeriodByUser(
   logs: { userId: string; year: number; month: number }[],
@@ -11,4 +12,26 @@ export function latestPeriodByUser(
     }
   }
   return latest;
+}
+
+export type UserStatusFilter = 'active' | 'deactivated' | 'all';
+
+export function filterUsers<
+  U extends {
+    name: string | null;
+    email: string | null;
+    deactivatedAt: Date | string | null;
+  },
+>(
+  users: U[],
+  { query, status }: { query: string; status: UserStatusFilter },
+): U[] {
+  const needle = normalize(query.trim());
+  return users.filter(
+    (user) =>
+      (status === 'all' ||
+        (status === 'deactivated') === !!user.deactivatedAt) &&
+      (!needle ||
+        normalize(`${user.name ?? ''} ${user.email ?? ''}`).includes(needle)),
+  );
 }

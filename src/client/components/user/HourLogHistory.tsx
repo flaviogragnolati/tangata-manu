@@ -18,14 +18,21 @@ import { type NormalizedHourLogContent } from '~/server/lib/controller/hour.cont
 type Props = {
   hours: HourLogFull;
   sites: { id: number; allowsExtraHours: boolean | null }[];
+  /** A user dado de baja sees their history but cannot edit it. */
+  readOnly?: boolean;
 };
-export default function HourLogHistory({ hours, sites }: Props) {
+export default function HourLogHistory({
+  hours,
+  sites,
+  readOnly = false,
+}: Props) {
   const [selected, setSelected] = useState<{
     log: NormalizedHourLogContent;
     period: Period;
   } | null>(null);
   const loadable = loadablePeriods();
   const isEditable = (month: number, year: number) =>
+    !readOnly &&
     loadable.some((period) => isSamePeriod(period, { year, month }));
 
   const years = Object.keys(hours);

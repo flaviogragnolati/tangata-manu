@@ -24,6 +24,9 @@ import RateChangeDialog, {
   type RateDialogMode,
 } from '~/components/admin/RateChangeDialog';
 import RateDeletionDialog from '~/components/admin/RateDeletionDialog';
+import UserStatusDialog, {
+  type UserStatusAction,
+} from '~/components/admin/UserStatusDialog';
 
 type Status = 'active' | 'all';
 
@@ -62,6 +65,9 @@ export default function SiteRateAdminView({
   );
   const [fromQuery, setFromQuery] = useState(openNew);
   const [deleting, setDeleting] = useState<SiteRateFull | null>(null);
+  const [statusAction, setStatusAction] = useState<UserStatusAction | null>(
+    null,
+  );
 
   const cards = useMemo(() => buildSiteRateCards(sites, rates), [sites, rates]);
 
@@ -94,6 +100,14 @@ export default function SiteRateAdminView({
     setDialog({ kind: 'correct', rate });
   const openRemove = (rate: SiteRateFull) =>
     setDialog({ kind: 'removeUserRate', rate });
+  const openDeactivateUser = (rate: SiteRateFull) => {
+    if (!rate.userId) return;
+    setStatusAction({
+      kind: 'deactivate',
+      userId: rate.userId,
+      label: rate.User?.name ?? rate.User?.email ?? 'Usuario',
+    });
+  };
   const closeDialog = () => {
     setDialog(null);
     // Drop `nueva` so a refresh doesn't reopen the dialog
@@ -154,6 +168,7 @@ export default function SiteRateAdminView({
                   onChange={openChange}
                   onRemove={openRemove}
                   onDelete={setDeleting}
+                  onDeactivateUser={openDeactivateUser}
                   onCreate={openCreate}
                 />
               </Grid>
@@ -184,6 +199,11 @@ export default function SiteRateAdminView({
         key={deleting?.id ?? 'closed'}
         rate={deleting}
         onClose={() => setDeleting(null)}
+      />
+      <UserStatusDialog
+        key={statusAction?.userId ?? 'closed'}
+        action={statusAction}
+        onClose={() => setStatusAction(null)}
       />
     </>
   );

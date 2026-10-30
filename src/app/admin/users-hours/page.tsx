@@ -13,7 +13,8 @@ export default async function UsersHoursAdminPage() {
     <UsersHoursAdminView
       hourLogs={hourLogs}
       users={users
-        .filter((user) => user.role === 'USER')
+        // Users dado de baja still show up through their logs
+        .filter((user) => user.role === 'USER' && !user.deactivatedAt)
         .map(({ id, name, email, image }) => ({ id, name, email, image }))}
       activeRates={activeRates}
       sites={sites.map((site) => ({ id: site.id, label: site.name }))}

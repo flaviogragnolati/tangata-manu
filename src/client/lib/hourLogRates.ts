@@ -12,6 +12,7 @@ type Person = {
   name: string | null;
   email: string | null;
   image: string | null;
+  deactivatedAt?: Date | string | null;
 };
 
 export type HourLogLike = {
@@ -55,15 +56,18 @@ export type MonthSummary = {
 
 export type UserRateSummary = Person & {
   userId: string;
+  deactivated: boolean;
   /** [previous period, chosen period] */
   months: [MonthSummary, MonthSummary];
 };
 
 /**
  * Tarifa desactualizada: the rate a log was priced with is no longer the
- * Tarifa aplicable for that user and site (or there is none).
+ * Tarifa aplicable for that user and site (or there is none). Never for a user
+ * dado de baja, whose user rates the baja itself deactivated.
  */
 export function isOutdatedLog(log: HourLogLike, activeRates: RateLike[]) {
+  if (log.User?.deactivatedAt) return false;
   return (
     resolveApplicableRate(activeRates, log.SiteRate.siteId, log.userId)?.id !==
     log.siteRateId
@@ -179,7 +183,10 @@ export function buildUserRateSummaries({
   );
 
   const people = new Map<string, Person>(
-    users.map(({ id, name, email, image }) => [id, { name, email, image }]),
+    users.map(({ id, name, email, image, deactivatedAt }) => [
+      id,
+      { name, email, image, deactivatedAt },
+    ]),
   );
   for (const log of logs) {
     if (people.has(log.userId)) continue;
@@ -187,6 +194,7 @@ export function buildUserRateSummaries({
       name: log.User?.name ?? null,
       email: log.User?.email ?? null,
       image: log.User?.image ?? null,
+      deactivatedAt: log.User?.deactivatedAt ?? null,
     });
   }
 
@@ -197,6 +205,7 @@ export function buildUserRateSummaries({
     summaries.push({
       userId,
       ...person,
+      deactivated: !!person.deactivatedAt,
       months: [
         summarizeMonth(userLogs, previous, activeRates),
         summarizeMonth(userLogs, period, activeRates),

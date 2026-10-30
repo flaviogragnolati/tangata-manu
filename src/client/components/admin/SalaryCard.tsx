@@ -23,6 +23,8 @@ type Props = {
   totalHours: number;
   extraSalary: number;
   delta?: number | null;
+  /** Rendered next to the amount, e.g. an actions menu button. */
+  menu?: ReactNode;
   children: ReactNode;
 };
 
@@ -34,6 +36,7 @@ export default function SalaryCard({
   totalHours,
   extraSalary,
   delta,
+  menu,
   children,
 }: Props) {
   return (
@@ -47,11 +50,23 @@ export default function SalaryCard({
           subheader: { noWrap: true },
         }}
         action={
-          <Stack sx={{ alignItems: { xs: 'flex-start', sm: 'flex-end' } }}>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              {ARSformatter.format(totalAmount)}
-            </Typography>
-            <DeltaChip delta={delta} />
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ alignItems: 'flex-start' }}
+          >
+            <Stack
+              sx={{
+                flex: { xs: 1, sm: 'none' },
+                alignItems: { xs: 'flex-start', sm: 'flex-end' },
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {ARSformatter.format(totalAmount)}
+              </Typography>
+              <DeltaChip delta={delta} />
+            </Stack>
+            {menu}
           </Stack>
         }
         sx={{

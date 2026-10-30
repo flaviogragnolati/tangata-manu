@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { amountDeltas, latestRateByUserSite, pctChange } from './salaries.ts';
+import {
+  amountDeltas,
+  extraSalaryRate,
+  latestRateByUserSite,
+  pctChange,
+} from './salaries.ts';
 
 /**
  * @param {string} userId
@@ -94,4 +99,43 @@ await test('latestRateByUserSite keeps the newest log’s applied rate per user 
   });
   assert.equal(latest.get('ana:2')?.normalRate, 500);
   assert.equal(latest.size, 2);
+});
+
+/** @param {Partial<import('./siteRates.ts').RateLike>} overrides */
+const activeRate = (overrides) => ({
+  id: 1,
+  siteId: 1,
+  userId: null,
+  active: true,
+  createdAt: new Date('2026-01-01'),
+  normalRate: 1000,
+  saturdayPreRate: 0,
+  saturdayPostRate: 0,
+  ...overrides,
+});
+
+await test('extraSalaryRate uses the applicable rate, or the last applied one for a user dado de baja', () => {
+  const activeRates = [
+    activeRate({ id: 1 }),
+    activeRate({ id: 2, userId: 'ana', normalRate: 1500 }),
+  ];
+  const lastRate = {
+    normalRate: 1800,
+    saturdayPreRate: 0,
+    saturdayPostRate: 0,
+  };
+  /** @param {string} userId @param {Set<string>} deactivatedUserIds @param {typeof lastRate | null} last */
+  const normal = (userId, deactivatedUserIds, last = lastRate) =>
+    extraSalaryRate({
+      userId,
+      siteId: 1,
+      lastRate: last,
+      deactivatedUserIds,
+      activeRates,
+    }).normalRate;
+
+  assert.equal(normal('ana', new Set()), 1500);
+  assert.equal(normal('beto', new Set()), 1000);
+  assert.equal(normal('ana', new Set(['ana'])), 1800);
+  assert.equal(normal('ana', new Set(['ana']), null), 1500);
 });

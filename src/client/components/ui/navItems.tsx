@@ -8,6 +8,7 @@ import SellOutlinedIcon from '@mui/icons-material/SellOutlined';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import MoreTimeOutlinedIcon from '@mui/icons-material/MoreTimeOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 
 export type NavArea = 'admin' | 'user';
 
@@ -51,6 +52,12 @@ export const NAV_ITEMS: Record<NavArea, NavItem[]> = {
       label: 'Sitios',
       description: 'Alta y edición de sitios',
       icon: <PlaceOutlinedIcon />,
+    },
+    {
+      href: '/admin/users',
+      label: 'Usuarios',
+      description: 'Profesionales, baja y reactivación',
+      icon: <GroupOutlinedIcon />,
     },
   ],
   user: [

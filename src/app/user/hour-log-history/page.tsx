@@ -14,5 +14,11 @@ export default async function HourLogHistoryPage() {
     api.site.getAllSites(),
   ]);
 
-  return <HourLogHistory hours={hours} sites={sites} />;
+  return (
+    <HourLogHistory
+      hours={hours}
+      sites={sites}
+      readOnly={!!session.user.deactivatedAt}
+    />
+  );
 }

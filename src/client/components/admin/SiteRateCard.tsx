@@ -40,6 +40,7 @@ type Props = {
   onChange: (rate: SiteRateFull) => void;
   onRemove: (rate: SiteRateFull) => void;
   onDelete: (rate: SiteRateFull) => void;
+  onDeactivateUser: (rate: SiteRateFull) => void;
   onCreate: (siteId: number) => void;
 };
 
@@ -52,6 +53,7 @@ export default function SiteRateCard({
   onChange,
   onRemove,
   onDelete,
+  onDeactivateUser,
   onCreate,
 }: Props) {
   const [menu, setMenu] = useState<{
@@ -234,6 +236,11 @@ export default function SiteRateCard({
                   : undefined
               }
             />
+          </MenuItem>
+        )}
+        {menu?.rate.User?.role === 'USER' && !menu.rate.User.deactivatedAt && (
+          <MenuItem onClick={runAndClose(onDeactivateUser)}>
+            Dar de baja al usuario
           </MenuItem>
         )}
       </Menu>
