@@ -9,7 +9,7 @@ export default async function SiteAdminPage() {
   ]);
   return (
     <SiteAdminView
-      sites={sites as unknown as SiteWithCreatedBy[]} // TODO: Fix this type cast
+      sites={sites as unknown as SiteWithCreatedBy[]} // getAllSites' output type doesn't narrow on includeCreatedBy
       activeRates={activeRates}
     />
   );

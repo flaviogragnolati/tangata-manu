@@ -64,11 +64,11 @@ export default function FormDialog({
         aria-labelledby="form-dialog-title"
       >
         <DialogTitle
-          id="form-dialog-title"
+          component="div"
           sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pr: 1.5 }}
         >
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="h6" component="span">
+            <Typography variant="h6" component="h2" id="form-dialog-title">
               {title}
             </Typography>
             {subtitle && (

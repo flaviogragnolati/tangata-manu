@@ -179,7 +179,7 @@ function RateChangeSteps({
       applyTo: null,
     },
   });
-  const { control, formState } = methods;
+  const { control, formState, setValue } = methods;
   const values = useWatch({ control });
 
   const siteId = values.siteId ?? null;
@@ -353,6 +353,13 @@ function RateChangeSteps({
                       options={sites}
                       required
                       fullWidth
+                      onChange={(id) => {
+                        // Hidden Saturday fields must not keep the form invalid
+                        if (!sites.find((s) => s.id === id)?.allowsExtraHours) {
+                          setValue('saturdayPreRate', null, { shouldValidate: true });
+                          setValue('saturdayPostRate', null, { shouldValidate: true });
+                        }
+                      }}
                     />
                     <Controller
                       control={control}

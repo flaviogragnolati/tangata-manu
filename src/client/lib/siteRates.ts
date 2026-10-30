@@ -45,9 +45,8 @@ function newestFirst<R extends RateLike>(rates: R[]): R[] {
 }
 
 /**
- * Tarifa aplicable: the user's active rate for the site, else the site's,
- * with the same precedence as `addUserHourLog`. With duplicated active rates
- * this picks the newest, while the backend takes whichever the DB returns.
+ * Tarifa aplicable: the user's active rate for the site, else the site's; with
+ * duplicated active rates, the newest. The hour load uses this same rule.
  */
 export function resolveApplicableRate<R extends RateLike>(
   rates: R[],
