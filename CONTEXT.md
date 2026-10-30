@@ -4,6 +4,16 @@ Gestión de horas trabajadas por los profesionales en cada sitio, las tarifas po
 
 ## Language
 
+### Usuarios
+
+**Baja de usuario**:
+Marca reversible sobre un usuario que dejó de trabajar. Deja de aparecer en las listas y los filtros del admin y no puede cargar ni editar horas. Sus tarifas por usuario vigentes quedan inactivas. Sus registros de horas, salarios y aguinaldo se conservan y se siguen mostrando donde corresponde.
+_Avoid_: Eliminar usuario, ocultar usuario, usuario inactivo, archivar usuario
+
+**Reactivación de usuario**:
+Fin de la baja de un usuario: vuelve a aparecer y a poder cargar horas. Sus tarifas por usuario siguen inactivas, así que cobra la tarifa del sitio hasta que se le cargue una nueva.
+_Avoid_: Alta, restaurar usuario
+
 ### Sitios y tarifas
 
 **Sitio**:
@@ -48,6 +58,10 @@ _Avoid_: Editar tarifa (sin aclarar), ajuste
 Desactivación de una tarifa por usuario sin reemplazo: el usuario vuelve a cobrar la tarifa del sitio vigente. La tarifa del sitio no tiene baja.
 _Avoid_: Eliminar tarifa, borrar tarifa
 
+**Borrado de tarifa**:
+Eliminación definitiva de una tarifa cargada por error. Solo es posible si no tiene registros de horas. Si era vigente y reemplazó a otra, la reemplazada vuelve a ser la vigente.
+_Avoid_: Eliminar tarifa, baja de tarifa
+
 **Actualización retroactiva**:
 Parte opcional de un reemplazo de tarifa o de una baja de tarifa por usuario: los registros de horas desde un período en adelante cambian de tarifa aplicada y se recalculan. Si se reemplaza una tarifa del sitio, alcanza a los registros con tarifa del sitio. Si se reemplaza una tarifa por usuario, a todos los registros de ese usuario en ese sitio. En una baja, a los registros de ese usuario en ese sitio con tarifa por usuario, que pasan a la tarifa del sitio vigente.
 _Avoid_: Retroactivo desde una fecha
@@ -74,5 +88,5 @@ Suma de los montos de los registros de horas de un usuario (o de un sitio) en un
 _Avoid_: Sueldo
 
 **Aguinaldo**:
-Monto acumulado por semestre: un doceavo de las horas del semestre, valuado con la tarifa aplicable.
+Monto acumulado por semestre: un doceavo de las horas del semestre, valuado con la tarifa aplicable. Para un usuario dado de baja, se valúa con la tarifa aplicada de su último registro de horas en cada sitio.
 _Avoid_: Extra salary, SAC

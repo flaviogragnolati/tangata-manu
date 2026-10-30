@@ -99,6 +99,7 @@ await test('replacing the Tarifa del sitio without retroactive keeps logs and de
     siteId: 1,
     userId: null,
     values: values(2000),
+    replacedRateId: 2,
   });
   assert.equal(plan.targetRateId, 'new');
   assert.deepEqual(plan.items, []);
@@ -387,4 +388,40 @@ await test('the fingerprint ignores input order and changes when a log changes',
 
   assert.equal(a.fingerprint, b.fingerprint);
   assert.notEqual(a.fingerprint, c.fingerprint);
+});
+
+await test('a replace records the newest active rate of its scope as replaced', () => {
+  /** @param {import('./rateChanges.ts').PlanRate[]} rates @param {string | null} userId */
+  const replacedRateId = (rates, userId) =>
+    planRateChange({
+      change: {
+        kind: 'replace',
+        siteId: 1,
+        userId,
+        values: values(2000),
+        retroactiveFrom: null,
+      },
+      rates,
+      logs: [],
+      now,
+    }).createRate?.replacedRateId;
+
+  assert.equal(
+    replacedRateId([rate({ id: 1 }), rate({ id: 2, userId: 'ana' })], null),
+    1,
+  );
+  assert.equal(
+    replacedRateId([rate({ id: 1 }), rate({ id: 2, active: false })], 'ana'),
+    null,
+  );
+  assert.equal(
+    replacedRateId(
+      [
+        rate({ id: 1, createdAt: new Date('2026-03-01') }),
+        rate({ id: 2, createdAt: new Date('2026-02-01') }),
+      ],
+      null,
+    ),
+    1,
+  );
 });

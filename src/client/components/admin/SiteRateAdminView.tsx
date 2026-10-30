@@ -23,6 +23,7 @@ import SiteRateAdminTable from '~/components/admin/SiteRateAdminTable';
 import RateChangeDialog, {
   type RateDialogMode,
 } from '~/components/admin/RateChangeDialog';
+import RateDeletionDialog from '~/components/admin/RateDeletionDialog';
 
 type Status = 'active' | 'all';
 
@@ -60,6 +61,7 @@ export default function SiteRateAdminView({
     openNew ? { kind: 'new', siteId: initialSiteId } : null,
   );
   const [fromQuery, setFromQuery] = useState(openNew);
+  const [deleting, setDeleting] = useState<SiteRateFull | null>(null);
 
   const cards = useMemo(() => buildSiteRateCards(sites, rates), [sites, rates]);
 
@@ -151,6 +153,7 @@ export default function SiteRateAdminView({
                   highlightUserId={userId}
                   onChange={openChange}
                   onRemove={openRemove}
+                  onDelete={setDeleting}
                   onCreate={openCreate}
                 />
               </Grid>
@@ -164,6 +167,7 @@ export default function SiteRateAdminView({
           rows={visibleRows}
           onChange={openChange}
           onCorrect={openCorrect}
+          onDelete={setDeleting}
         />
       )}
 
@@ -175,6 +179,11 @@ export default function SiteRateAdminView({
         rates={rates}
         sites={sites}
         users={users}
+      />
+      <RateDeletionDialog
+        key={deleting?.id ?? 'closed'}
+        rate={deleting}
+        onClose={() => setDeleting(null)}
       />
     </>
   );

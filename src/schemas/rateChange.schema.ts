@@ -37,3 +37,8 @@ export const applyRateChangeSchema = z.object({
   change: rateChangeSchema,
   expectedFingerprint: z.string(),
 });
+
+export const deleteRateSchema = z.object({
+  siteRateId: z.number().int().positive(),
+  expectedRestoreRateId: z.number().int().positive().nullable(),
+});

@@ -69,6 +69,8 @@ export type RateChangePlan = {
     siteId: number;
     userId: string | null;
     values: RateValues;
+    /** Newest rate of the scope this one replaces, kept so a Borrado de tarifa can restore it. */
+    replacedRateId: number | null;
   } | null;
   updateRate: { id: number; values: RateValues } | null;
   targetRateId: number | 'new';
@@ -121,12 +123,14 @@ function sameValues(a: RateValues, b: RateValues) {
   );
 }
 
-function newestActiveSiteRate(rates: PlanRate[]) {
+function newest<R extends { createdAt: Date | string }>(rates: R[]) {
   return (
-    rates
-      .filter((rate) => rate.active && !rate.userId)
-      .sort((a, b) => time(b.createdAt) - time(a.createdAt))[0] ?? null
+    [...rates].sort((a, b) => time(b.createdAt) - time(a.createdAt))[0] ?? null
   );
+}
+
+function newestActiveSiteRate(rates: PlanRate[]) {
+  return newest(rates.filter((rate) => rate.active && !rate.userId));
 }
 
 const fromPeriod = (log: PlanLog, from: Period) =>
@@ -178,10 +182,16 @@ export function planRateChange({
   switch (change.kind) {
     case 'replace': {
       const userId = change.userId ?? null;
-      deactivateRateIds = rates
-        .filter((rate) => rate.active && (rate.userId ?? null) === userId)
-        .map((rate) => rate.id);
-      createRate = { siteId: change.siteId, userId, values: change.values };
+      const replaced = rates.filter(
+        (rate) => rate.active && (rate.userId ?? null) === userId,
+      );
+      deactivateRateIds = replaced.map((rate) => rate.id);
+      createRate = {
+        siteId: change.siteId,
+        userId,
+        values: change.values,
+        replacedRateId: newest(replaced)?.id ?? null,
+      };
       targetRateId = 'new';
 
       const from = change.retroactiveFrom;

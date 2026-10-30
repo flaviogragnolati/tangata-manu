@@ -15,6 +15,7 @@ import {
   Chip,
   Divider,
   IconButton,
+  ListItemText,
   Menu,
   MenuItem,
   Stack,
@@ -38,6 +39,7 @@ type Props = {
   highlightUserId?: string | null;
   onChange: (rate: SiteRateFull) => void;
   onRemove: (rate: SiteRateFull) => void;
+  onDelete: (rate: SiteRateFull) => void;
   onCreate: (siteId: number) => void;
 };
 
@@ -49,12 +51,17 @@ export default function SiteRateCard({
   highlightUserId,
   onChange,
   onRemove,
+  onDelete,
   onCreate,
 }: Props) {
   const [menu, setMenu] = useState<{
     anchor: HTMLElement;
     rate: SiteRateFull;
   } | null>(null);
+  const runAndClose = (action: (rate: SiteRateFull) => void) => () => {
+    if (menu) action(menu.rate);
+    setMenu(null);
+  };
   const { siteRate, userRates, allowsExtraHours } = data;
   const rateTypes = allowsExtraHours
     ? C.rateTypes
@@ -70,8 +77,24 @@ export default function SiteRateCard({
             : undefined
         }
         action={
-          allowsExtraHours ? (
-            <Chip size="small" label="Sábados" variant="outlined" />
+          allowsExtraHours || siteRate ? (
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+              {allowsExtraHours && (
+                <Chip size="small" label="Sábados" variant="outlined" />
+              )}
+              {siteRate && (
+                <IconButton
+                  size="small"
+                  aria-label="Más acciones para la tarifa del sitio"
+                  aria-haspopup="menu"
+                  onClick={(event) =>
+                    setMenu({ anchor: event.currentTarget, rate: siteRate })
+                  }
+                >
+                  <MoreVertIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Stack>
           ) : undefined
         }
         sx={{ '& .MuiCardHeader-content': { minWidth: 0 } }}
@@ -190,14 +213,29 @@ export default function SiteRateCard({
         </Button>
       </CardActions>
       <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}>
-        <MenuItem
-          onClick={() => {
-            if (menu) onRemove(menu.rate);
-            setMenu(null);
-          }}
-        >
-          Quitar tarifa por usuario
-        </MenuItem>
+        {menu?.rate.userId && (
+          <MenuItem onClick={runAndClose(onRemove)}>
+            Quitar tarifa por usuario
+          </MenuItem>
+        )}
+        {menu && (
+          // A disabled MenuItem shows no tooltip, so the reason goes as text
+          <MenuItem
+            disabled={menu.rate._count.UserHourLog > 0}
+            onClick={runAndClose(onDelete)}
+          >
+            <ListItemText
+              primary={
+                menu.rate.userId ? 'Borrar tarifa' : 'Borrar tarifa del sitio'
+              }
+              secondary={
+                menu.rate._count.UserHourLog > 0
+                  ? `Tiene ${logsCount(menu.rate)}`
+                  : undefined
+              }
+            />
+          </MenuItem>
+        )}
       </Menu>
     </Card>
   );

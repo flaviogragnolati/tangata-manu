@@ -100,13 +100,16 @@ model SiteRate {
     createdById      String
     userId           String?
     active           Boolean  @default(true)
+    replacedRateId   Int?
     createdAt        DateTime @default(now())
     updatedAt        DateTime @updatedAt
 
-    CreatedBy   User          @relation("CreatedBy", fields: [createdById], references: [id])
-    Site        Site          @relation(fields: [siteId], references: [id])
-    User        User?         @relation("User", fields: [userId], references: [id])
-    UserHourLog UserHourLog[]
+    CreatedBy    User          @relation("CreatedBy", fields: [createdById], references: [id])
+    Site         Site          @relation(fields: [siteId], references: [id])
+    User         User?         @relation("User", fields: [userId], references: [id])
+    ReplacedRate SiteRate?     @relation("RateReplacement", fields: [replacedRateId], references: [id], onDelete: SetNull)
+    ReplacedBy   SiteRate[]    @relation("RateReplacement")
+    UserHourLog  UserHourLog[]
 
     @@index([id, siteId])
 }

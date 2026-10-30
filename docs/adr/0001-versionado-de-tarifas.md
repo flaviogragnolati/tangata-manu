@@ -13,3 +13,4 @@ Salarios, aguinaldo e historial calculan el monto de cada registro de horas con 
 
 - No se agrega un "editar sin recalcular". Si un caso parece pedirlo, es un reemplazo.
 - Toda mutación que cambia horas o tarifa aplicada (carga, edición, corrección, retroactivo, baja) vuelve a escribir `amount` con la regla, para que el monto guardado coincida con lo que muestran las pantallas.
+- Excepción (2026-10-30): el **borrado de tarifa** de una tarifa vigente sin registros vuelve a activar la tarifa que esa reemplazó. Es la única forma de reactivar una tarifa y sirve para deshacer un reemplazo cargado por error. Una tarifa con registros no se puede borrar.

@@ -2,6 +2,7 @@
 
 import EditIcon from '@mui/icons-material/Edit';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { Chip } from '@mui/material';
 import {
   DataGrid,
@@ -22,17 +23,22 @@ const HIDDEN_ON_XS = ['id', 'createdBy', 'createdAt'] as const;
 const formatRate = (value: number | null) =>
   value === null ? '—' : ARSformatter.format(value);
 
+const logsCount = (count: number) =>
+  `${count} ${count === 1 ? 'registro' : 'registros'}`;
+
 type Row = SiteRateFull;
 type Props = {
   rows: SiteRateFull[];
   onChange: (rate: SiteRateFull) => void;
   onCorrect: (rate: SiteRateFull) => void;
+  onDelete: (rate: SiteRateFull) => void;
 };
 
 export default function SiteRateAdminTable({
   rows,
   onChange,
   onCorrect,
+  onDelete,
 }: Props) {
   const columnVisibility = useXsColumnVisibility(HIDDEN_ON_XS);
 
@@ -114,7 +120,7 @@ export default function SiteRateAdminTable({
       field: 'actions',
       type: 'actions',
       headerName: 'Acciones',
-      width: 90,
+      width: 110,
       getActions: ({ id, row }) => [
         row.active ? (
           <GridActionsCellItem
@@ -131,6 +137,18 @@ export default function SiteRateAdminTable({
             onClick={() => onCorrect(row)}
           />
         ),
+        <GridActionsCellItem
+          key={`${id}-delete`}
+          showInMenu
+          icon={<DeleteOutlineIcon />}
+          label={
+            row._count.UserHourLog > 0
+              ? `Borrar (tiene ${logsCount(row._count.UserHourLog)})`
+              : 'Borrar'
+          }
+          disabled={row._count.UserHourLog > 0}
+          onClick={() => onDelete(row)}
+        />,
       ],
     },
   ];

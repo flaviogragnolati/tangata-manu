@@ -3,11 +3,12 @@ import { TRPCError } from '@trpc/server';
 
 import {
   applyRateChangeSchema,
+  deleteRateSchema,
   rateChangeSchema,
   siteSchema,
   type RateChangeInput,
 } from '~/schemas';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type { LastRateChange, RateChangeKind } from '~/types';
 import { currentPeriod } from '~/client/lib/period';
 import {
@@ -16,6 +17,11 @@ import {
   type RateChangeErrorCode,
   type RateChangePlan,
 } from '~/server/lib/rateChanges';
+import {
+  planRateDeletion,
+  RateDeletionError,
+  type RateDeletionErrorCode,
+} from '~/server/lib/rateDeletion';
 import {
   adminProcedure,
   createTRPCRouter,
@@ -95,6 +101,7 @@ export const siteRouter = createTRPCRouter({
                 data: {
                   siteId: plan.createRate.siteId,
                   userId: plan.createRate.userId,
+                  replacedRateId: plan.createRate.replacedRateId,
                   ...plan.createRate.values,
                   createdById: ctx.user.id,
                 },
@@ -167,17 +174,99 @@ export const siteRouter = createTRPCRouter({
         });
       }
     }),
+  previewRateDeletion: adminProcedure
+    .input(z.object({ siteRateId: z.number().int().positive() }))
+    .query(async ({ input, ctx }) => {
+      const { rate, rates, plan } = await loadDeletionPlan(
+        ctx.db,
+        input.siteRateId,
+      );
+      const restore = rates.find((r) => r.id === plan.restoreRateId);
+      const siteRate =
+        plan.outcome === 'leavesScopeEmpty' && rate.userId
+          ? rates
+              .filter((r) => r.active && !r.userId)
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]
+          : undefined;
+
+      return {
+        rate: {
+          id: rate.id,
+          siteName: rate.Site.name,
+          userId: rate.userId,
+          userName: rate.User ? (rate.User.name ?? rate.User.email) : null,
+          active: rate.active,
+          createdAt: rate.createdAt,
+          normalRate: rate.normalRate,
+          saturdayPreRate: rate.saturdayPreRate,
+          saturdayPostRate: rate.saturdayPostRate,
+        },
+        outcome: plan.outcome,
+        restoreRate: restore
+          ? {
+              id: restore.id,
+              normalRate: restore.normalRate,
+              saturdayPreRate: restore.saturdayPreRate,
+              saturdayPostRate: restore.saturdayPostRate,
+              createdAt: restore.createdAt,
+            }
+          : null,
+        fallbackSiteRate: siteRate ? { normalRate: siteRate.normalRate } : null,
+      };
+    }),
   deleteSiteRate: adminProcedure
-    .input(z.number())
+    .input(deleteRateSchema)
     .mutation(async ({ input, ctx }) => {
       try {
-        return await ctx.db.siteRate.delete({ where: { id: input } });
+        return await ctx.db.$transaction(async (tx) => {
+          const { rate, plan } = await loadDeletionPlan(
+            tx,
+            input.siteRateId,
+            'CONFLICT',
+          );
+          if (plan.restoreRateId !== input.expectedRestoreRateId) {
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message:
+                'Las tarifas cambiaron mientras revisaba. Revise de nuevo.',
+            });
+          }
+
+          // Before the delete: SetNull would otherwise cut the replacement chain
+          await tx.siteRate.updateMany({
+            where: { replacedRateId: rate.id },
+            data: { replacedRateId: rate.replacedRateId },
+          });
+          if (plan.restoreRateId) {
+            await tx.siteRate.update({
+              where: { id: plan.restoreRateId },
+              data: { active: true },
+            });
+          }
+          await tx.siteRate.delete({ where: { id: rate.id } });
+
+          return { deletedId: rate.id, restoredRateId: plan.restoreRateId };
+        });
       } catch (err) {
+        if (err instanceof TRPCError) {
+          console.error(`Error deleting site rate: ${err.code}`);
+          throw err;
+        }
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2003'
+        ) {
+          console.error(`Error deleting site rate: ${err.code}`);
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: LOGS_ADDED_MESSAGE,
+          });
+        }
         const error = err as Error;
         console.error(`Error deleting site rate: ${error.message}`);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Error deleting site rate',
+          message: 'No se pudo borrar la tarifa',
         });
       }
     }),
@@ -228,6 +317,17 @@ export const siteRouter = createTRPCRouter({
 
 type Db = Prisma.TransactionClient;
 type SiteData = Awaited<ReturnType<typeof loadSiteData>>;
+
+const RATE_DELETION_ERRORS: Record<
+  RateDeletionErrorCode,
+  { code: 'NOT_FOUND' | 'BAD_REQUEST'; message: string }
+> = {
+  RATE_NOT_FOUND: { code: 'NOT_FOUND', message: 'No se encontró la tarifa.' },
+  HAS_LOGS: {
+    code: 'BAD_REQUEST',
+    message: 'La tarifa tiene registros de horas y no se puede borrar.',
+  },
+};
 
 const RATE_CHANGE_MESSAGES: Record<RateChangeErrorCode, string> = {
   RATE_NOT_FOUND: 'No se encontró la tarifa.',
@@ -300,13 +400,51 @@ function runPlan(change: RateChangeInput, { rates, logs }: SiteData) {
   }
 }
 
+const LOGS_ADDED_MESSAGE =
+  'La tarifa ya tiene registros de horas y no se puede borrar.';
+
+/** `hasLogsCode`: logs that appeared after the preview are a conflict, not a bad request. */
+async function loadDeletionPlan(
+  db: Db,
+  siteRateId: number,
+  hasLogsCode: 'BAD_REQUEST' | 'CONFLICT' = 'BAD_REQUEST',
+) {
+  const rate = await db.siteRate.findUnique({
+    where: { id: siteRateId },
+    include: { Site: true, User: true },
+  });
+  if (!rate) {
+    throw new TRPCError(RATE_DELETION_ERRORS.RATE_NOT_FOUND);
+  }
+  const [rates, logsCount] = await Promise.all([
+    db.siteRate.findMany({ where: { siteId: rate.siteId } }),
+    db.userHourLog.count({ where: { siteRateId } }),
+  ]);
+  try {
+    const plan = planRateDeletion({ siteRateId, rates, logsCount });
+    return { rate, rates, plan };
+  } catch (err) {
+    if (err instanceof RateDeletionError) {
+      throw new TRPCError(
+        err.code === 'HAS_LOGS' && hasLogsCode === 'CONFLICT'
+          ? { code: 'CONFLICT', message: LOGS_ADDED_MESSAGE }
+          : RATE_DELETION_ERRORS[err.code],
+      );
+    }
+    throw err;
+  }
+}
+
 function toPreview(
-  { deactivateRateIds, createRate, updateRate, ...plan }: RateChangePlan,
+  {
+    deactivateRateIds: _deactivated,
+    createRate,
+    updateRate,
+    ...plan
+  }: RateChangePlan,
   { site, rates, logs }: SiteData,
 ) {
-  const replaced = rates
-    .filter((rate) => deactivateRateIds.includes(rate.id))
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+  const replaced = rates.find((rate) => rate.id === createRate?.replacedRateId);
   const target =
     createRate?.values ??
     updateRate?.values ??
