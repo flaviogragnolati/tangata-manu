@@ -1,5 +1,4 @@
 import { api } from '~/trpc/server';
-import BackButton from '~/client/components/ui/BackButton';
 import SiteRateAdminTable from '~/components/admin/SiteRateAdminTable';
 
 export default async function SiteRateAdminPage() {
@@ -19,13 +18,6 @@ export default async function SiteRateAdminPage() {
       label: user.name ?? user.email!,
     }));
   return (
-    <div className="container">
-      <BackButton href="/admin" />
-      <SiteRateAdminTable
-        rates={rates}
-        sites={siteOptions}
-        users={userOptions}
-      />
-    </div>
+    <SiteRateAdminTable rates={rates} sites={siteOptions} users={userOptions} />
   );
 }

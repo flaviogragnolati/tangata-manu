@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 
 import { api } from '~/trpc/server';
-import BackButton from '~/client/components/ui/BackButton';
 import HourLogForm from '~/components/user/HourLogForm';
 import { getServerAuthSession } from '~/server/auth';
 
@@ -14,10 +13,5 @@ export default async function HourLogPage() {
   const sites = await api.site.getAllSites();
   const previousHourLogs = await api.hours.getUserContextHourLogs();
 
-  return (
-    <div className="container">
-      <BackButton href="/user" />
-      <HourLogForm sites={sites} previousHourLogs={previousHourLogs} />
-    </div>
-  );
+  return <HourLogForm sites={sites} previousHourLogs={previousHourLogs} />;
 }

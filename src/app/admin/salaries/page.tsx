@@ -1,5 +1,4 @@
 import { api } from '~/trpc/server';
-import BackButton from '~/client/components/ui/BackButton';
 import SalariesDashboard from '~/components/admin/SalariesDashboard';
 
 export default async function UserSalariesPage() {
@@ -9,14 +8,11 @@ export default async function UserSalariesPage() {
   const currentRates = await api.site.getActiveSiteRates();
 
   return (
-    <div className="container">
-      <BackButton href="/admin" />
-      <SalariesDashboard
-        salaries={salaries}
-        users={users}
-        sites={sites}
-        rates={currentRates}
-      />
-    </div>
+    <SalariesDashboard
+      salaries={salaries}
+      users={users}
+      sites={sites}
+      rates={currentRates}
+    />
   );
 }

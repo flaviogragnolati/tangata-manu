@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AppShell from '~/client/components/ui/AppShell';
 import { getServerAuthSession } from '~/server/auth';
 import '~/styles/globals.css';
 
@@ -14,8 +15,8 @@ export default async function Layout({
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-zinc-50 px-5 py-2">
+    <AppShell area="user" user={session.user}>
       {children}
-    </main>
+    </AppShell>
   );
 }
